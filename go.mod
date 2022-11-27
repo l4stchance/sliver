@@ -5,40 +5,40 @@ go 1.18
 replace github.com/desertbit/grumble v1.1.1 => github.com/moloch--/grumble v1.1.6
 
 require (
-	github.com/AlecAivazis/survey/v2 v2.3.6
-	github.com/Binject/binjection v0.0.0-20200705191933-da1a50d7013d
-	github.com/Binject/debug v0.0.0-20210312092933-6277045c2fdf
-	github.com/Binject/go-donut v0.0.0-20210701074227-67a31e2d883e
-	github.com/Binject/universal v0.0.0-20210304094126-daefaa886313
-	github.com/Ne0nd0g/go-clr v1.0.3
-	github.com/alecthomas/chroma v0.10.0
-	github.com/cheggaaa/pb/v3 v3.1.0
-	github.com/chromedp/cdproto v0.0.0-20220924210414-0e3390be1777
-	github.com/chromedp/chromedp v0.8.6
-	github.com/desertbit/columnize v2.1.0+incompatible
-	github.com/desertbit/go-shlex v0.1.1
-	github.com/desertbit/grumble v1.1.1
-	github.com/desertbit/readline v1.5.1
-	github.com/fatih/color v1.13.0
-	github.com/gofrs/uuid v4.3.1+incompatible
-	github.com/google/uuid v1.3.0
-	github.com/gorilla/mux v1.8.0
-	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
-	github.com/jedib0t/go-pretty/v6 v6.4.2
-	github.com/kbinani/screenshot v0.0.0-20191211154542-3a185f1ce18f
-	github.com/lesnuages/go-winio v0.4.19
-	github.com/lesnuages/snitch v0.6.0
-	github.com/mattn/go-sqlite3 v1.14.16
-	github.com/miekg/dns v1.1.50
-	github.com/moloch--/memmod v0.0.0-20211120144554-8b37cc654945
-	github.com/pquerna/otp v1.3.0
-	github.com/shirou/gopsutil/v3 v3.22.10
-	github.com/sirupsen/logrus v1.9.0
-	github.com/spf13/cobra v1.6.1
-	github.com/stretchr/testify v1.8.1
-	github.com/things-go/go-socks5 v0.0.3-0.20210722055343-24af464efe43
-	github.com/xlab/treeprint v1.1.0
-	github.com/yiya1989/sshkrb5 v0.0.0-20201110125252-a1455b75a35e
+	github.com/AlecAivazis/survey/v2 v2.3.6	//交互式操作库 可用支持的类型很多
+	github.com/Binject/binjection v0.0.0-20200705191933-da1a50d7013d //将Shellcode注入到二进制文件当中，支持PE、ELF等，可自动识别
+	github.com/Binject/debug v0.0.0-20210312092933-6277045c2fdf //解析二进制文件并修改？？？
+	github.com/Binject/go-donut v0.0.0-20210701074227-67a31e2d883e //Donut的Go实现
+	github.com/Binject/universal v0.0.0-20210304094126-daefaa886313 //从内存加载共享库，支持Windows、Linux、Mac
+	github.com/Ne0nd0g/go-clr v1.0.3 //CLR Hosting的Go实现
+	github.com/alecthomas/chroma v0.10.0  //语法高亮，支持多种语言
+	github.com/cheggaaa/pb/v3 v3.1.0 //进度条
+	github.com/chromedp/cdproto v0.0.0-20220924210414-0e3390be1777 //针对Chrome DevTools Protocol，实际用途暂不知
+	github.com/chromedp/chromedp v0.8.6 //同上
+	github.com/desertbit/columnize v2.1.0+incompatible //控制台的文本格式化
+	github.com/desertbit/go-shlex v0.1.1 //Unix shell的词法分析
+	github.com/desertbit/grumble v1.1.1 //命令行的交互式 Shell
+	github.com/desertbit/readline v1.5.1 //GNU-Readline的Go实现
+	github.com/fatih/color v1.13.0 //命令行颜色
+	github.com/gofrs/uuid v4.3.1+incompatible //RFC-4122中定义的UUID
+	github.com/google/uuid v1.3.0 //RFC 4122 and DCE 1.1的UUID实现
+	github.com/gorilla/mux v1.8.0 //HTTP Server
+	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0 //gRPC中间件
+	github.com/jedib0t/go-pretty/v6 v6.4.2 //命令行输出美化
+	github.com/kbinani/screenshot v0.0.0-20191211154542-3a185f1ce18f //截屏
+	github.com/lesnuages/go-winio v0.4.19 //Win32 IO
+	github.com/lesnuages/snitch v0.6.0 //Payload扫描 用来把自己传上VT？？？
+	github.com/mattn/go-sqlite3 v1.14.16 //sqlite3
+	github.com/miekg/dns v1.1.50 //DNS操作
+	github.com/moloch--/memmod v0.0.0-20211120144554-8b37cc654945 //Wireguard的Memmod
+	github.com/pquerna/otp v1.3.0 //二次身份验证
+	github.com/shirou/gopsutil/v3 v3.22.10 //psutil 获取主机、CPU等信息
+	github.com/sirupsen/logrus v1.9.0 //结构化日志记录
+	github.com/spf13/cobra v1.6.1 //命令行交互
+	github.com/stretchr/testify v1.8.1 //方便断言和测试
+	github.com/things-go/go-socks5 v0.0.3-0.20210722055343-24af464efe43 //socks5 TCP、UPD ipv4、ipv6
+	github.com/xlab/treeprint v1.1.0 //树状结构展示
+	github.com/yiya1989/sshkrb5 v0.0.0-20201110125252-a1455b75a35e //kbr5 for ssh？？？
 	golang.org/x/crypto v0.0.0-20220829220503-c86fa9a7ed90
 	golang.org/x/net v0.0.0-20220722155237-a158d28d115b
 	golang.org/x/sys v0.0.0-20220928140112-f11e5e49a4ec
@@ -47,13 +47,13 @@ require (
 	golang.zx2c4.com/wireguard v0.0.0-20220316235147-5aff28b14c24
 	golang.zx2c4.com/wireguard/wgctrl v0.0.0-20220208144051-fde48d68ee68
 	google.golang.org/grpc v1.42.0-dev.0.20211020220737-f00baa6c3c84
-	google.golang.org/protobuf v1.28.1
-	gopkg.in/AlecAivazis/survey.v1 v1.8.8
+	google.golang.org/protobuf v1.28.1 //Protocol Buffer  用来序列化
+	gopkg.in/AlecAivazis/survey.v1 v1.8.8 //交互式操作库
 	gorm.io/driver/mysql v1.4.4
 	gorm.io/driver/postgres v1.4.5
 	gorm.io/driver/sqlite v1.4.3
-	gorm.io/gorm v1.24.1-0.20221019064659-5dd2bb482755
-	gvisor.dev/gvisor v0.0.0-20220817001344-846276b3dbc5
+	gorm.io/gorm v1.24.1-0.20221019064659-5dd2bb482755 //ORM 对象关系映射
+	gvisor.dev/gvisor v0.0.0-20220817001344-846276b3dbc5 //容器沙箱
 	modernc.org/sqlite v1.19.3
 )
 
