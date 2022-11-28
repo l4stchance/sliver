@@ -58,6 +58,7 @@ func ExecLimits() {
 	// {{end}}
 
 	// {{if .Config.LimitDomainJoined}}
+	// 判断是否在域内，不在域内则退出
 	ok, err := isDomainJoined()
 	if err == nil && !ok {
 		os.Exit(1)
@@ -65,6 +66,7 @@ func ExecLimits() {
 	// {{end}}
 
 	// {{if .Config.LimitHostname}}
+	// 如果机器名不匹配则退出
 	hostname, err := os.Hostname()
 	if err == nil && strings.ToLower(hostname) != strings.ToLower("{{.Config.LimitHostname}}") {
 		// {{if .Config.Debug}}
@@ -75,8 +77,10 @@ func ExecLimits() {
 	// {{end}}
 
 	// {{if .Config.LimitUsername}}
+	// 如果用户名不匹配则退出
 	currentUser, _ := user.Current()
 	if runtime.GOOS == "windows" {
+		// Windows获取用户名，前面是有机器名的
 		username := strings.Split(currentUser.Username, "\\")
 		if len(username) == 2 && username[1] != "{{.Config.LimitUsername}}" {
 			// {{if .Config.Debug}}
@@ -93,6 +97,7 @@ func ExecLimits() {
 	// {{end}}
 
 	// {{if .Config.LimitDatetime}} "2014-11-12T11:45:26.371Z"
+	// 如果超时则退出-设置Implant有效期
 	expiresAt, err := time.Parse(time.RFC3339, "{{.Config.LimitDatetime}}")
 	if err == nil && time.Now().After(expiresAt) {
 		// {{if .Config.Debug}}
@@ -103,6 +108,7 @@ func ExecLimits() {
 	// {{end}}
 
 	// {{if .Config.LimitFileExists}}
+	// 如果文件不存在则退出
 	if _, err := os.Stat(`{{.Config.LimitFileExists}}`); err != nil {
 		// {{if .Config.Debug}}
 		log.Printf("Error statting %s: %s", `{{.Config.LimitFileExists}}`, err)
@@ -112,6 +118,7 @@ func ExecLimits() {
 	// {{end}}
 
 	// {{if .Config.LimitLocale}}
+	// 判断操作系统语言，匹配不到则退出
 	locale := locale.GetLocale()
 	match, err := regexp.MatchString(`{{.Config.LimitLocale}}`, locale)
 	if !match {
@@ -123,7 +130,7 @@ func ExecLimits() {
 		}
 		// {{end}}
 		os.Exit(1)
-	} 
+	}
 	// {{end}}
 
 	// {{if .Config.Debug}}

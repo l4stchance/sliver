@@ -113,12 +113,14 @@ func (b *Beacon) Duration() time.Duration {
 }
 
 // StartBeaconLoop - Starts the beacon loop generator
+// <-chan struct{} 只读chan             chan<- struct{} 只写chan
 func StartBeaconLoop(abort <-chan struct{}) <-chan *Beacon {
 	// {{if .Config.Debug}}
 	log.Printf("Starting beacon loop ...")
 	// {{end}}
 
 	var beacon *Beacon
+	// 可能会有多个Beacon产生，这取决于上线配置信息中支持的协议数量
 	nextBeacon := make(chan *Beacon)
 
 	innerAbort := make(chan struct{})
@@ -126,6 +128,7 @@ func StartBeaconLoop(abort <-chan struct{}) <-chan *Beacon {
 
 	go func() {
 		defer close(nextBeacon)
+		// 当前函数结束后，给innerAbort信号，C2Generator中的函数会结束
 		defer func() {
 			innerAbort <- struct{}{}
 		}()
@@ -133,6 +136,9 @@ func StartBeaconLoop(abort <-chan struct{}) <-chan *Beacon {
 		// {{if .Config.Debug}}
 		log.Printf("Recv from c2 generator ...")
 		// {{end}}
+
+		// c2Generator 阻塞的channel
+		// channel拿到一个上线信息，循环一次，http、https或者其他
 		for uri := range c2Generator {
 			// {{if .Config.Debug}}
 			log.Printf("Next CC = %s", uri.String())
@@ -169,6 +175,8 @@ func StartBeaconLoop(abort <-chan struct{}) <-chan *Beacon {
 				log.Printf("Unknown c2 protocol %s", uri.Scheme)
 				// {{end}}
 			}
+
+			// 生成Beacon并写出，当外层函数结束时，<-abort可用
 			select {
 			case nextBeacon <- beacon:
 			case <-abort:

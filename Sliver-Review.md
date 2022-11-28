@@ -98,9 +98,50 @@
    )
    ```
 
-3. 
+3. 上线前的多种限制条件，通过机器名、用户名等，对于时间的限制，确实比较惊艳
 
+   保证在时间结束后，即使直接被上传 VT 等，也无法让其正常运行
 
+   ```
+   expiresAt, err := time.Parse(time.RFC3339, "{{.Config.LimitDatetime}}")
+   if err == nil && time.Now().After(expiresAt) {
+   	os.Exit(1)
+   }
+   ```
+
+4. 通过 channel 跨越多层函数调用，并确保其结束
+
+   ```
+   abort := make(chan struct{})
+   defer func() {
+   	abort <- struct{}{}
+   }()
+   beacons := transports.StartBeaconLoop(abort)
+   
+   
+   
+   func StartBeaconLoop(abort <-chan struct{}) <-chan *Beacon {
+   	var beacon *Beacon
+   	nextBeacon := make(chan *Beacon)
+   	c2Generator := C2Generator(innerAbort)
+   
+   	go func() {
+   		defer close(nextBeacon)
+   
+   // 功能代码
+   
+   		select {
+   		case nextBeacon <- beacon:
+   		case <-abort:
+   			return
+   		}
+   	}()
+   
+   	return nextBeacon
+   }
+   ```
+
+   
 
 
 

@@ -1,5 +1,7 @@
 #include "sliver.h"
 
+//每个操作系统的初始代码，都最终执行了 StartW()
+
 #ifdef __WIN32
 #include <windows.h>
 

@@ -41,6 +41,8 @@ func C2Generator(abort <-chan struct{}) <-chan *url.URL {
 	log.Printf("Starting c2 url generator ({{.Config.ConnectionStrategy}}) ...")
 	// {{end}}
 
+	// 循环累加上线地址
+	// 这里可以同时有多种上线方式：HTTP、HTTPS、DNS、mtls、wg
 	c2Servers := []func() string{}
 	// {{range $index, $value := .Config.C2}}
 	c2Servers = append(c2Servers, func() string {
@@ -54,6 +56,7 @@ func C2Generator(abort <-chan struct{}) <-chan *url.URL {
 		c2Counter := uint(0)
 		for {
 			var next string
+			// 选择上线规则
 			switch "{{.Config.ConnectionStrategy}}" {
 			case strategyRandom: // Random
 				next = c2Servers[insecureRand.Intn(len(c2Servers))]()
@@ -68,6 +71,7 @@ func C2Generator(abort <-chan struct{}) <-chan *url.URL {
 				next = c2Servers[c2Counter%uint(len(c2Servers))]()
 			}
 			c2Counter++
+			// 取反，判断是否超过，能超过这么多数？？？
 			if ^uint(0) < c2Counter {
 				panic("counter overflow")
 			}
@@ -83,6 +87,7 @@ func C2Generator(abort <-chan struct{}) <-chan *url.URL {
 			log.Printf("Yield c2 uri = '%s'", uri)
 			// {{end}}
 
+			// 写回uri 或者 结束uri的选择
 			// Generate next C2 URL or abort
 			select {
 			case generator <- uri:

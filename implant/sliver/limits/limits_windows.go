@@ -34,6 +34,8 @@ import (
 
 // {{if .Config.LimitDomainJoined}}
 
+// isDomainJoined 判断是否加入域
+// https://learn.microsoft.com/zh-cn/windows/win32/api/lmjoin/nf-lmjoin-netgetjoininformation
 func isDomainJoined() (bool, error) {
 	var domain *uint16
 	var status uint32
@@ -47,6 +49,9 @@ func isDomainJoined() (bool, error) {
 
 // {{end}}
 
+// PlatformLimits 反调试检测
+// 如果当前是调试器运行，直接退出
+// https://learn.microsoft.com/zh-cn/windows/win32/api/debugapi/nf-debugapi-isdebuggerpresent
 func PlatformLimits() {
 	kernel32 := syscall.MustLoadDLL("kernel32.dll")
 	isDebuggerPresent := kernel32.MustFindProc("IsDebuggerPresent")
