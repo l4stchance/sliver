@@ -257,6 +257,7 @@ func sessionStartup() {
 // {{if .Config.IsBeacon}}
 func beaconMainLoop(beacon *transports.Beacon) error {
 	// Register beacon
+	//
 	err := beacon.Init()
 	if err != nil {
 		// {{if .Config.Debug}}

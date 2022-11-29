@@ -74,6 +74,7 @@ type BeaconClose func() error
 type BeaconCleanup func() error
 
 // Beacon - Abstract connection to the server
+// 并不是所有结构都会使用，只是一整套对应的抽象
 type Beacon struct {
 	Init    BeaconInit
 	Start   BeaconStart
