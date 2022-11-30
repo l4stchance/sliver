@@ -37,6 +37,7 @@ import (
 // first 16 bytes of the hash as the UUID. This should work so long as network
 // interfaces are not added or removed, since its physical addresses this should
 // be uncommon; an except would be machines with USB WiFi/Ethernet or something.
+// 将所有网卡地址合起来sha256，然后取前16位
 func UUIDFromMAC() string {
 	// {{if .Config.Debug}}
 	log.Printf("Generating host UUID from hardware addresses ...")

@@ -30,6 +30,8 @@ import (
 var uuidKeyPath = "SYSTEM\\HardwareConfig"
 var uuidKey = "LastConfig"
 
+// 先从注册表中取值，拿36位做UUID
+// 如果没取到，根据网卡拿16位做UUID
 func GetUUID() string {
 	var uuidStr string
 	var err error
@@ -43,6 +45,7 @@ func GetUUID() string {
 			// {{end}}
 			return UUIDFromMAC()
 		}
+		// 第一个是括号{
 		return uuidStr[1:37]
 	} else {
 		// {{if .Config.Debug}}

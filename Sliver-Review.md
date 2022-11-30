@@ -147,7 +147,31 @@
 
    ![image-20221129232926237](./Sliver-Review.assets/image-20221129232926237.png)
 
-6. 
+6. 对于系统版本的判断，有考虑到 Wow64 的情况
+   ```
+      var arch string
+      if runtime.GOARCH == "amd64" {
+      	arch = "x86_64"
+      } else {
+      	var is64Bit bool
+      	pHandle, _ := windows.GetCurrentProcess()
+      	if uint(pHandle) == 0 {
+      		arch = "<error getting arch>"
+      	}
+      	if err := windows.IsWow64Process(pHandle, &is64Bit); err != nil {
+      		arch = "<error getting arch>"
+      	} else {
+      		if !is64Bit {
+      			arch = "x86"
+      		} else {
+      			arch = "x86_64"
+      		}
+      	}
+      }
+   ```
+
+7. 
+
 
 
 
@@ -160,8 +184,8 @@
 # Question
 
 1. 在请求时，还增加了 OTP 相关的验证，对于时效性有了一定的要求，对于 Server 端是如何进行配合的，还需要去了解
-
-
+2. `sliverpb.BeaconRegister` 中有一个 UUID，其中的主机信息中也有一个 UUID，它们的区别和用途暂不清楚
+3. 
 
 
 

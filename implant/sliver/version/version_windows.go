@@ -32,6 +32,7 @@ import (
 
 const VER_NT_WORKSTATION = 0x0000001
 
+// 获取详细操作系统版本信息
 func getOSVersion() string {
 	osVersion := windows.RtlGetVersion()
 
@@ -76,6 +77,7 @@ func getOSVersion() string {
 		servicePack = fmt.Sprintf(" Service Pack %d", osVersion.ServicePackMajor)
 	}
 
+	// 判断系统架构，也判断了是否为Wow64
 	var arch string
 	if runtime.GOARCH == "amd64" {
 		arch = "x86_64"

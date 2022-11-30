@@ -104,8 +104,10 @@ func (b *Beacon) Duration() time.Duration {
 	// {{end}}
 	jitterDuration := time.Duration(0)
 	if 0 < b.Jitter() {
+		// 当前有抖动范围的话，随一个出来，当作抖动持续时间
 		jitterDuration = time.Duration(insecureRand.Int63n(b.Jitter()))
 	}
+	// 间隔时间+抖动时间
 	duration := time.Duration(b.Interval()) + jitterDuration
 	// {{if .Config.Debug}}
 	log.Printf("Duration: %v", duration)

