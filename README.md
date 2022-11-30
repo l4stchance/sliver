@@ -6,6 +6,8 @@ Sliver-Review
 
 文档：[Sliver-Review](https://github.com/l4stchance/sliver/blob/Review/Sliver-Review.md) 进行中
 
+流程图：[sliver.drawio](https://github.com/l4stchance/sliver/blob/Review/sliver.drawio)
+
 Sliver
 ======
 
