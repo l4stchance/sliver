@@ -170,7 +170,21 @@
       }
    ```
 
-7. 
+7. 对于 Windows 的功能执行，需要考虑一点的就是 Token，在功能执行前需要进行 Token 模拟，结束之后需要进行恢复，这里做了一层封装，在不影响后续功能执行的情况下，完美的解决了这个问题
+
+   ![image-20221203225226669](./Sliver-Review.assets/image-20221203225226669.png)
+
+   ![image-20221203225243759](./Sliver-Review.assets/image-20221203225243759.png)
+
+8. 在 Kill 当中提供了三种退出的方式
+
+   在 Windows 中，提供了 ExitProcess、ExitThread 两个方法，如果 call 成功后，当前就会退出了，不会继续向后执行 os.Exit(0) 
+
+   而在非 Windows 当中，则会直接执行 os.Exit(0) 
+
+   ![image-20221203225412602](./Sliver-Review.assets/image-20221203225412602.png)
+
+9. 
 
 
 

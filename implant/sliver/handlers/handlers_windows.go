@@ -123,6 +123,7 @@ func GetSystemHandlers() map[uint32]RPCHandler {
 }
 
 func WrapperHandler(handler RPCHandler, data []byte, resp RPCResponse) {
+	// 用户模拟
 	if priv.CurrentToken != 0 {
 		err := syscalls.ImpersonateLoggedOnUser(priv.CurrentToken)
 		if err != nil {
@@ -130,10 +131,12 @@ func WrapperHandler(handler RPCHandler, data []byte, resp RPCResponse) {
 			log.Printf("Error: %v\n", err)
 			// {{end}}
 		}
+		// 将协程锁定在当前线程上
 		runtime.LockOSThread()
 		defer runtime.UnlockOSThread()
 	}
 	handler(data, resp)
+	// 恢复
 	if priv.CurrentToken != 0 {
 		err := priv.TRevertToSelf()
 		if err != nil {

@@ -47,6 +47,7 @@ func GetSpecialHandlers() map[uint32]SpecialHandler {
 	return specialHandlers
 }
 
+// 结束 ExitProcess、ExitThread、os.Exit(0)
 func killHandler(data []byte, _ *transports.Connection) error {
 	killReq := &sliverpb.KillReq{}
 	err := proto.Unmarshal(data, killReq)
@@ -70,6 +71,7 @@ func killHandler(data []byte, _ *transports.Connection) error {
 	// {{if .Config.Debug}}
 	log.Println("Let's exit!")
 	// {{end}}
+	// 非DLL/shellcode，或者它们调用失败时，才会执行到
 	os.Exit(0)
 	return nil
 }
