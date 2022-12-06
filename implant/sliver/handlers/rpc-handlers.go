@@ -76,6 +76,7 @@ func terminateHandler(data []byte, resp RPCResponse) {
 	resp(data, err)
 }
 
+// Windows: MiniDump
 func dumpHandler(data []byte, resp RPCResponse) {
 	procDumpReq := &sliverpb.ProcessDumpReq{}
 	err := proto.Unmarshal(data, procDumpReq)

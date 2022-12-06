@@ -198,8 +198,14 @@
 # Question
 
 1. 在请求时，还增加了 OTP 相关的验证，对于时效性有了一定的要求，对于 Server 端是如何进行配合的，还需要去了解
+
 2. `sliverpb.BeaconRegister` 中有一个 UUID，其中的主机信息中也有一个 UUID，它们的区别和用途暂不清楚
-3. 
+
+3. 在模拟 Token 的时候为什么要在复制完之后提升这两个权限
+
+   ![image-20221206224650071](./Sliver-Review.assets/image-20221206224650071.png)
+
+4. 
 
 
 

@@ -108,6 +108,7 @@ func RevertToSelf() error {
 		log.Printf("CloseHandle Error: %v\n", err)
 		// {{end}}
 	}
+	// 清理全局的Token记录
 	CurrentToken = windows.Token(0)
 	return err
 }
@@ -174,6 +175,7 @@ func enableCurrentThreadPrivilege(privilegeName string) error {
 func impersonateProcess(pid uint32) (newToken windows.Token, err error) {
 	var attr windows.SecurityAttributes
 	var requiredPrivileges = []string{"SeAssignPrimaryTokenPrivilege", "SeIncreaseQuotaPrivilege"}
+	// 获取进程Token
 	primaryToken, err := getPrimaryToken(pid)
 
 	if err != nil {
@@ -198,6 +200,7 @@ func impersonateProcess(pid uint32) (newToken windows.Token, err error) {
 		// {{end}}
 		return
 	}
+	// 为什么要提这两个权限 "SeAssignPrimaryTokenPrivilege", "SeIncreaseQuotaPrivilege"
 	for _, priv := range requiredPrivileges {
 		err = enableCurrentThreadPrivilege(priv)
 		if err != nil {
@@ -210,6 +213,7 @@ func impersonateProcess(pid uint32) (newToken windows.Token, err error) {
 	return
 }
 
+// 遍历所有进程，模拟指定用户的Token
 func impersonateUser(username string) (token windows.Token, err error) {
 	if username == "" {
 		err = fmt.Errorf("username can't be empty")
@@ -229,10 +233,12 @@ func impersonateUser(username string) (token windows.Token, err error) {
 				// {{if .Config.Debug}}
 				log.Println("Got token for process", proc.Pid(), proc.Executable())
 				// {{end}}
+				// 成功模拟后，直接return
 				return
 			}
 		}
 	}
+	// 没有模拟成功时，会走这里，恢复一次
 	windows.RevertToSelf()
 	err = fmt.Errorf("Could not acquire a token belonging to %s", username)
 	return
@@ -295,6 +301,7 @@ func deleteRegistryKey(keyPath, keyName string) (err error) {
 	return
 }
 
+// CreateProcessWithLogonW函数调用
 func RunAs(username string, domain string, password string, program string, args string, show int, netonly bool) (err error) {
 	// call CreateProcessWithLogonW to create a new process with the specified credentials
 	// https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-createprocesswithlogonw
@@ -360,7 +367,7 @@ func RunAs(username string, domain string, password string, program string, args
 	// call CreateProcessWithLogonW
 	var logonFlags uint32 = 0
 	if netonly {
-		logonFlags = 2 // LOGON_NETCREDENTIALS_ONLY
+		logonFlags = 2 // LOGON_NETCREDENTIALS_ONLY 在本地使用当前权限，只有在网络请求时，使用所新的权限
 	}
 	err = syscalls.CreateProcessWithLogonW(u, d, p, logonFlags, prog, cmd, 0, e, di, si, pi)
 	if err != nil {

