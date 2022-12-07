@@ -235,6 +235,7 @@ func currentTokenOwnerHandler(data []byte, resp RPCResponse) {
 	resp(data, err)
 }
 
+// 向指定的进程名中注入执行
 func getsystemHandler(data []byte, resp RPCResponse) {
 	getSysReq := &sliverpb.InvokeGetSystemReq{}
 	err := proto.Unmarshal(data, getSysReq)

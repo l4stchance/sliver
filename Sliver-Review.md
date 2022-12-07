@@ -205,7 +205,17 @@
 
    ![image-20221206224650071](./Sliver-Review.assets/image-20221206224650071.png)
 
-4. 
+4. 在 ExecuteAssembly 执行的时候，选择使用 Susspended 来创建进程，之后就直接通过 CreateRemoteThread 来执行 Shellcode，那么这里会有几个问题
+
+   ```
+   shellcode能否正常执行
+   主线程的状态是怎样
+   新创建的线程的状态是怎样
+   如果主线程会恢复，那么一些会直接结束的进程，怎么保证shellcode正常执行结束
+   如果主线程不会恢复，那么一些基础环境是如何准备的
+   ```
+
+5. 
 
 
 

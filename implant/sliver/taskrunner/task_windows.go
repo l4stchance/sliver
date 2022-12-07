@@ -296,6 +296,9 @@ func InProcExecuteAssembly(assemblyBytes []byte, assemblyArgs []string, runtime 
 	return LoadAssembly(assemblyBytes, assemblyArgs, runtime)
 }
 
+// 创建新进程，模拟PPID，挂起创建
+// 打开句柄，模拟Token，injectTask注入shellcode，等待执行完成，返回结果
+// ExecuteAssembly？？？ 感觉是个Shellcode都能够正常执行
 func ExecuteAssembly(data []byte, process string, processArgs []string, ppid uint32) (string, error) {
 	var (
 		stdoutBuf, stderrBuf bytes.Buffer
@@ -490,6 +493,8 @@ func startProcess(proc string, args []string, ppid uint32, stdout *bytes.Buffer,
 	return cmd, nil
 }
 
+// 死循环 GetExitCodeThread获取状态
+// 直到ExitCode不为STILL_ACTIVE时跳出
 func waitForCompletion(threadHandle windows.Handle) error {
 	for {
 		var code uint32
