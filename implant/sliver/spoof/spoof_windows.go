@@ -31,6 +31,7 @@ import (
 	// {{end}}
 )
 
+// 为*exec.Cmd设置ParentProcess属性
 func SpoofParent(ppid uint32, cmd *exec.Cmd) error {
 	parentHandle, err := windows.OpenProcess(windows.PROCESS_CREATE_PROCESS|windows.PROCESS_DUP_HANDLE|windows.PROCESS_QUERY_INFORMATION, false, ppid)
 	if err != nil {

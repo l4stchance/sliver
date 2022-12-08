@@ -407,6 +407,7 @@ func executeWindowsHandler(data []byte, resp RPCResponse) {
 	resp(data, err)
 }
 
+// 迁移 远程线程注入
 func migrateHandler(data []byte, resp RPCResponse) {
 	// {{if .Config.Debug}}
 	log.Println("migrateHandler: RemoteTask called")
