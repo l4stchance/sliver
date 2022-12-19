@@ -47,6 +47,9 @@ func (c *CLRInstance) GetRuntimeHost(runtime string) *clr.ICORRuntimeHost {
 	return c.runtimeHost
 }
 
+// 调用go-clr
+// 第一次执行时，会将.net程序加载进去执行，并且计算、存储整体的hash
+// 后续执行时，会先判断hash是否存在，存在则不进行第二次加载
 func LoadAssembly(data []byte, assemblyArgs []string, runtime string) (string, error) {
 	var (
 		methodInfo *clr.MethodInfo
@@ -58,6 +61,8 @@ func LoadAssembly(data []byte, assemblyArgs []string, runtime string) (string, e
 		return "", errors.New("Could not load CLR runtime host")
 	}
 
+	// 看之前有没有加载过
+	// 没有的话再进行加载
 	if asm := getAssembly(data); asm != nil {
 		methodInfo = asm.methodInfo
 	} else {
