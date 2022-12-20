@@ -545,6 +545,7 @@ func lookupPrivilegeNameByLUID(luid uint64) (string, string, error) {
 	return syscall.UTF16ToString(nameBuffer), syscall.UTF16ToString(displayNameBuffer), nil
 }
 
+// 取进程名，拿到当前进程的Token等信息，然后自行解析Token，获取到用户名等信息，也获取了当前进程的完整性等级
 func GetPrivs() ([]PrivilegeInfo, string, string, error) {
 	// A place to store the process token
 	var tokenHandle windows.Token
@@ -643,6 +644,7 @@ func GetPrivs() ([]PrivilegeInfo, string, string, error) {
 
 	privInfo := make([]PrivilegeInfo, int(privilegeCount))
 
+	// 自己解析，从结构体当中获取Token的信息
 	for index := 0; index < int(privilegeCount); index++ {
 		// Iterate over the privileges and make sense of them
 		// In case of errors, return what we have so far and the error

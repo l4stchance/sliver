@@ -27,6 +27,8 @@ import (
 	"golang.org/x/sys/windows/svc/mgr"
 )
 
+// 没有提供账号密码，可能需要提前制作Token
+// Start包含Create和Start两部分
 func StartService(hostname string, binPath string, arguments string, serviceName string, serviceDesc string) error {
 	manager, err := mgr.ConnectRemote(hostname)
 	if err != nil {
@@ -65,6 +67,7 @@ func StopService(hostname string, serviceName string) error {
 	if err != nil {
 		return err
 	}
+	// 等待十秒钟，之后如果还没有关闭，再决定报错信息
 	timeout := time.Now().Add(10 * time.Second)
 
 	for status.State != svc.Stopped {

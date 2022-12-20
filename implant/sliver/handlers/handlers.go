@@ -616,6 +616,9 @@ func executeHandler(data []byte, resp RPCResponse) {
 	resp(data, err)
 }
 
+// 获取环境变量
+// 如果提供名称，则返回指定名称的环境变量
+// 未指定，则返回全部的环境变量
 func getEnvHandler(data []byte, resp RPCResponse) {
 	envReq := &sliverpb.EnvReq{}
 	err := proto.Unmarshal(data, envReq)
@@ -649,6 +652,7 @@ func getEnvHandler(data []byte, resp RPCResponse) {
 	resp(data, err)
 }
 
+// 提供Key、Value直接设置环境变量
 func setEnvHandler(data []byte, resp RPCResponse) {
 	envReq := &sliverpb.SetEnvReq{}
 	err := proto.Unmarshal(data, envReq)
@@ -670,6 +674,7 @@ func setEnvHandler(data []byte, resp RPCResponse) {
 	resp(data, err)
 }
 
+// 直接os.Unsetenv
 func unsetEnvHandler(data []byte, resp RPCResponse) {
 	unsetEnvReq := &sliverpb.UnsetEnvReq{}
 	err := proto.Unmarshal(data, unsetEnvReq)
@@ -939,6 +944,7 @@ func compressDir(path string, filter string, recurse bool, buf io.Writer) (int, 
 	return readFiles, unreadableFiles, nil
 }
 
+// 扩展为绝对路径
 func expandPath(exePath string) (string, error) {
 	if !strings.ContainsRune(exePath, os.PathSeparator) {
 		_, err := exec.LookPath(exePath)

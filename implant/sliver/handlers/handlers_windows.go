@@ -215,6 +215,8 @@ func revToSelfHandler(_ []byte, resp RPCResponse) {
 	resp(data, err)
 }
 
+// 如果当前模拟了Token，则返回模拟的，否则就是当前的Token
+// 返回格式为 domain\user
 func currentTokenOwnerHandler(data []byte, resp RPCResponse) {
 	tokOwnReq := &sliverpb.CurrentTokenOwnerReq{}
 	err := proto.Unmarshal(data, tokOwnReq)
@@ -254,6 +256,7 @@ func getsystemHandler(data []byte, resp RPCResponse) {
 	resp(data, err)
 }
 
+// 正常的injectTask
 func executeAssemblyHandler(data []byte, resp RPCResponse) {
 	execReq := &sliverpb.InvokeExecuteAssemblyReq{}
 	err := proto.Unmarshal(data, execReq)
@@ -275,6 +278,7 @@ func executeAssemblyHandler(data []byte, resp RPCResponse) {
 
 }
 
+// go-clr
 func inProcExecuteAssemblyHandler(data []byte, resp RPCResponse) {
 	execReq := &sliverpb.InvokeInProcExecuteAssemblyReq{}
 	err := proto.Unmarshal(data, execReq)
@@ -295,6 +299,8 @@ func inProcExecuteAssemblyHandler(data []byte, resp RPCResponse) {
 	resp(data, err)
 }
 
+// 标准的功能执行 exec.Command
+// 唯一多的地方就是结果的接收，可以指定将结果和错误写入指定的文件，也可以在执行结束后回传回来
 func executeWindowsHandler(data []byte, resp RPCResponse) {
 	var (
 		err       error
@@ -314,6 +320,7 @@ func executeWindowsHandler(data []byte, resp RPCResponse) {
 
 	execResp := &sliverpb.Execute{}
 	exePath, err := expandPath(execReq.Path)
+	// 扩展失败直接返回
 	if err != nil {
 		execResp.Response = &commonpb.Response{
 			Err: fmt.Sprintf("%s", err),
@@ -338,6 +345,7 @@ func executeWindowsHandler(data []byte, resp RPCResponse) {
 		}
 	}
 
+	// 是否有输出信息，输出信息输出到哪里都可以进行指定
 	if execReq.Output {
 		stdOutBuff := new(bytes.Buffer)
 		stdErrBuff := new(bytes.Buffer)
@@ -438,6 +446,7 @@ func migrateHandler(data []byte, resp RPCResponse) {
 	resp(data, err)
 }
 
+// RDI执行，DLL与参数会分两次写入目标进程中
 func spawnDllHandler(data []byte, resp RPCResponse) {
 	spawnReq := &sliverpb.SpawnDllReq{}
 	err := proto.Unmarshal(data, spawnReq)
@@ -480,6 +489,7 @@ func makeTokenHandler(data []byte, resp RPCResponse) {
 	resp(data, err)
 }
 
+// startService包含Create和Start两部分
 func startService(data []byte, resp RPCResponse) {
 	startService := &sliverpb.StartServiceReq{}
 	err := proto.Unmarshal(data, startService)
@@ -497,6 +507,8 @@ func startService(data []byte, resp RPCResponse) {
 	resp(data, err)
 }
 
+// stopService停止指定服务
+// 10秒钟未关闭，则根据情况决定返回结果
 func stopService(data []byte, resp RPCResponse) {
 	stopServiceReq := &sliverpb.StopServiceReq{}
 	err := proto.Unmarshal(data, stopServiceReq)
@@ -514,6 +526,7 @@ func stopService(data []byte, resp RPCResponse) {
 	resp(data, err)
 }
 
+// removeService直接Delete
 func removeService(data []byte, resp RPCResponse) {
 	removeServiceReq := &sliverpb.RemoveServiceReq{}
 	err := proto.Unmarshal(data, removeServiceReq)
@@ -651,6 +664,7 @@ func regValuesListHandler(data []byte, resp RPCResponse) {
 	resp(data, err)
 }
 
+// 返回进程名、完整性等级、完整的Token特权信息
 func getPrivsHandler(data []byte, resp RPCResponse) {
 	createReq := &sliverpb.GetPrivsReq{}
 
