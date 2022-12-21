@@ -472,6 +472,9 @@ func spawnDllHandler(data []byte, resp RPCResponse) {
 	resp(data, err)
 }
 
+// 使用LogonUser来进行创建，然后模拟Token
+// 由于dwLogonProvider被固定为LOGON32_PROVIDER_DEFAULT，则它不能选择LOGON32_LOGON_NEW_CREDENTIALS类型的方式
+// https://learn.microsoft.com/zh-cn/windows/win32/api/winbase/nf-winbase-logonusera
 func makeTokenHandler(data []byte, resp RPCResponse) {
 	makeTokenReq := &sliverpb.MakeTokenReq{}
 	err := proto.Unmarshal(data, makeTokenReq)
@@ -544,6 +547,8 @@ func removeService(data []byte, resp RPCResponse) {
 	resp(data, err)
 }
 
+// WriteKey
+// 先根据Type判断存入的方案，然后相应取值
 func regWriteHandler(data []byte, resp RPCResponse) {
 	regWriteReq := &sliverpb.RegistryWriteReq{}
 	err := proto.Unmarshal(data, regWriteReq)
@@ -574,6 +579,7 @@ func regWriteHandler(data []byte, resp RPCResponse) {
 	resp(data, err)
 }
 
+// ReadKey
 func regReadHandler(data []byte, resp RPCResponse) {
 	regReadReq := &sliverpb.RegistryReadReq{}
 	err := proto.Unmarshal(data, regReadReq)
@@ -592,6 +598,7 @@ func regReadHandler(data []byte, resp RPCResponse) {
 	resp(data, err)
 }
 
+// CreateSubKey
 func regCreateKeyHandler(data []byte, resp RPCResponse) {
 	createReq := &sliverpb.RegistryCreateKeyReq{}
 	err := proto.Unmarshal(data, createReq)
@@ -609,6 +616,7 @@ func regCreateKeyHandler(data []byte, resp RPCResponse) {
 	resp(data, err)
 }
 
+// DeleteKey
 func regDeleteKeyHandler(data []byte, resp RPCResponse) {
 	deleteReq := &sliverpb.RegistryDeleteKeyReq{}
 	err := proto.Unmarshal(data, deleteReq)
@@ -626,6 +634,7 @@ func regDeleteKeyHandler(data []byte, resp RPCResponse) {
 	resp(data, err)
 }
 
+// ListSubKeys
 func regSubKeysListHandler(data []byte, resp RPCResponse) {
 	listReq := &sliverpb.RegistrySubKeyListReq{}
 	err := proto.Unmarshal(data, listReq)
@@ -645,6 +654,7 @@ func regSubKeysListHandler(data []byte, resp RPCResponse) {
 	resp(data, err)
 }
 
+// ListValues
 func regValuesListHandler(data []byte, resp RPCResponse) {
 	listReq := &sliverpb.RegistryListValuesReq{}
 	err := proto.Unmarshal(data, listReq)

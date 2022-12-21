@@ -184,7 +184,27 @@
 
    ![image-20221203225412602](./Sliver-Review.assets/image-20221203225412602.png)
 
-9. 
+9. MakeToken
+
+   在 rastamouse 的文章中提到过 MakeToken 相关的内容
+
+   https://rastamouse.me/token-impersonation-in-csharp/
+
+   使用的是 LOGON32_LOGON_NEW_CREDENTIALS 来做的 LogonType
+
+   ![image-20221221211129570](./Sliver-Review.assets/image-20221221211129570.png)
+
+   这样可以保证只在网络的情况下使用 Token
+
+   ![image-20221221211259922](./Sliver-Review.assets/image-20221221211259922.png)
+
+   但在 Sliver 中，直接将类型固定的，导致无法使用这个内容，但是它又没有进行区分，这里也就会出问题
+
+   ![image-20221221211655350](./Sliver-Review.assets/image-20221221211655350.png)
+
+   
+
+   
 
 
 

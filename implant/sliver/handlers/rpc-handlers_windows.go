@@ -29,6 +29,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// 调用CreateToolhelp32Snapshot获取全部的进程信息
 func psHandler(data []byte, resp RPCResponse) {
 	psListReq := &sliverpb.PsReq{}
 	err := proto.Unmarshal(data, psListReq)
@@ -51,14 +52,14 @@ func psHandler(data []byte, resp RPCResponse) {
 
 	for _, proc := range procs {
 		p := &commonpb.Process{
-			Pid:        int32(proc.Pid()),
-			Ppid:       int32(proc.PPid()),
-			Executable: proc.Executable(),
-			Owner:      proc.Owner(),
+			Pid:          int32(proc.Pid()),
+			Ppid:         int32(proc.PPid()),
+			Executable:   proc.Executable(),
+			Owner:        proc.Owner(),
 			Architecture: proc.Architecture(),
 		}
 		p.CmdLine = proc.(*ps.WindowsProcess).CmdLine()
-		p.SessionID = int32(proc.(*ps.WindowsProcess).SessionID())
+		p.SessionID = int32(proc.(*ps.WindowsProcess).SessionID()) // 进程所对应的会话ID
 		psList.Processes = append(psList.Processes, p)
 	}
 	data, err = proto.Marshal(psList)

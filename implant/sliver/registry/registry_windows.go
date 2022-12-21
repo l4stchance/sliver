@@ -19,6 +19,8 @@ var hives = map[string]registry.Key{
 	"HKCC": registry.CURRENT_CONFIG,
 }
 
+// 调用官方包打开注册表项
+// 逻辑有点混乱，先Open了本地，再判断是否要远程，如果不是远程，再返回原来的值
 func openKey(hostname string, hive string, path string, access uint32) (*registry.Key, error) {
 	var (
 		key registry.Key
@@ -45,6 +47,7 @@ func openKey(hostname string, hive string, path string, access uint32) (*registr
 }
 
 // ReadKey reads a registry key value and returns it as a string
+// 先openKey，再根据KeyType，来决定取值的方案
 func ReadKey(hostname string, hive string, path string, key string) (string, error) {
 	var (
 		buf    []byte
@@ -102,6 +105,7 @@ func ReadKey(hostname string, hive string, path string, key string) (string, err
 // If the key does not exists, it gets created.
 // If the key exists and the new type is different than the existing one,
 // the new type overrides the old one.
+// 先openKey，然后使用断言来判断type类型，决定走不同的赋值方案
 func WriteKey(hostname string, hive string, path string, key string, value interface{}) error {
 	k, err := openKey(hostname, hive, path, registry.QUERY_VALUE|registry.SET_VALUE|registry.WRITE)
 	if err != nil {
@@ -130,6 +134,7 @@ func WriteKey(hostname string, hive string, path string, key string, value inter
 // DeleteKey removes an existing key or value.
 // Removing a value takes precident over removing a key.
 // If neither exists, an error is returned.
+// openKey-DeleteValue-DeleteKey
 func DeleteKey(hostname string, hive string, path string, key string) error {
 	k, err := openKey(hostname, hive, path, registry.SET_VALUE)
 	if err != nil {
@@ -148,6 +153,7 @@ func DeleteKey(hostname string, hive string, path string, key string) error {
 }
 
 // ListSubKeys returns all the subkeys for the provided path
+// 需要遍历，直接使用了官方包所提供的方法 ReadSubKeyNames
 func ListSubKeys(hostname string, hive string, path string) (results []string, err error) {
 	k, err := openKey(hostname, hive, path, registry.READ|registry.RESOURCE_LIST|registry.FULL_RESOURCE_DESCRIPTOR)
 	if err != nil {
@@ -161,6 +167,7 @@ func ListSubKeys(hostname string, hive string, path string) (results []string, e
 }
 
 // ListValues returns all the value names for a subkey path
+// 需要遍历，直接使用了官方包所提供的方法 ReadValueNames
 func ListValues(hostname string, hive string, path string) (results []string, err error) {
 	k, err := openKey(hostname, hive, path, registry.READ|registry.RESOURCE_LIST|registry.FULL_RESOURCE_DESCRIPTOR)
 	if err != nil {
@@ -174,6 +181,7 @@ func ListValues(hostname string, hive string, path string) (results []string, er
 }
 
 // CreateSubKey creates a new subkey
+// openKey-CreateKey
 func CreateSubKey(hostname string, hive string, path string, keyName string) error {
 	k, err := openKey(hostname, hive, path, registry.ALL_ACCESS)
 	if err != nil {

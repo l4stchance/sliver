@@ -434,6 +434,7 @@ func SpawnDll(procName string, processArgs []string, ppid uint32, data []byte, o
 }
 
 // SideLoad - Side load a binary as shellcode and returns its output
+// 直接调用了SpawnDll
 func Sideload(procName string, procArgs []string, ppid uint32, data []byte, args string, kill bool) (string, error) {
 	return SpawnDll(procName, procArgs, ppid, data, 0, "", kill)
 }

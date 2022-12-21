@@ -43,6 +43,7 @@ import (
 // ------------------------------------------------------------------------------------------
 // These are generic handlers (as in calling convention) that use platform specific code
 // ------------------------------------------------------------------------------------------
+// 通过ps.Kill(Pid)直接结束进程
 func terminateHandler(data []byte, resp RPCResponse) {
 
 	terminateReq := &sliverpb.TerminateReq{}
@@ -117,6 +118,8 @@ func taskHandler(data []byte, resp RPCResponse) {
 	resp([]byte{}, err)
 }
 
+// 内部直接调用的SpawnDll
+// 看SideloadReq的结构，很多内容都没有用到，设计跟实现的不是一个东西
 func sideloadHandler(data []byte, resp RPCResponse) {
 	sideloadReq := &sliverpb.SideloadReq{}
 	err := proto.Unmarshal(data, sideloadReq)
@@ -138,6 +141,7 @@ func sideloadHandler(data []byte, resp RPCResponse) {
 	resp(data, err)
 }
 
+// 使用官方包net.Interfaces()
 func ifconfigHandler(_ []byte, resp RPCResponse) {
 	interfaces := ifconfig()
 	// {{if .Config.Debug}}
@@ -175,6 +179,7 @@ func ifconfig() *sliverpb.Ifconfig {
 	return interfaces
 }
 
+// 第三方库"github.com/kbinani/screenshot"
 func screenshotHandler(data []byte, resp RPCResponse) {
 	sc := &sliverpb.ScreenshotReq{}
 	err := proto.Unmarshal(data, sc)
@@ -194,6 +199,8 @@ func screenshotHandler(data []byte, resp RPCResponse) {
 	resp(data, err)
 }
 
+// 根据TCP、UDP、IPv4、IPv6、Listening几个状态来取结果
+// 使用的是第三方包 https://github.com/cakturk/go-netstat
 func netstatHandler(data []byte, resp RPCResponse) {
 	netstatReq := &sliverpb.NetstatReq{}
 	err := proto.Unmarshal(data, netstatReq)
