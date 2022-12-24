@@ -101,6 +101,7 @@ var (
 		sliverpb.MsgSSHCommandReq:  runSSHCommandHandler,
 
 		// Extensions
+		// 后面再看
 		sliverpb.MsgRegisterExtensionReq: registerExtensionHandler,
 		sliverpb.MsgCallExtensionReq:     callExtensionHandler,
 		sliverpb.MsgListExtensionsReq:    listExtensionsHandler,
@@ -722,7 +723,6 @@ func getPrivsHandler(data []byte, resp RPCResponse) {
 }
 
 // Extensions
-
 func registerExtensionHandler(data []byte, resp RPCResponse) {
 	registerReq := &sliverpb.RegisterExtensionReq{}
 	err := proto.Unmarshal(data, registerReq)

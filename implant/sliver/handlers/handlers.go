@@ -253,6 +253,7 @@ func getDirList(target string) (string, []os.FileInfo, error) {
 	return dir, []os.FileInfo{}, errors.New("directory does not exist")
 }
 
+// 删除，根据递归与否，选择os.RemoveAll或者os.Remove
 func rmHandler(data []byte, resp RPCResponse) {
 	rmReq := &sliverpb.RmReq{}
 	err := proto.Unmarshal(data, rmReq)
@@ -268,6 +269,7 @@ func rmHandler(data []byte, resp RPCResponse) {
 	rm.Path = target
 	_, err = os.Stat(target)
 	if err == nil {
+		// 判断是否是指定路径，并且是否要强制删除
 		if (target == "/" || target == "C:\\") && !rmReq.Force {
 			err = errors.New("cowardly refusing to remove volume root without force")
 		}
@@ -275,6 +277,7 @@ func rmHandler(data []byte, resp RPCResponse) {
 
 	rm.Response = &commonpb.Response{}
 	if err == nil {
+		// 递归
 		if rmReq.Recursive {
 			err = os.RemoveAll(target)
 			if err != nil {
@@ -294,6 +297,7 @@ func rmHandler(data []byte, resp RPCResponse) {
 	resp(data, err)
 }
 
+// 直接调用os.Rename
 func mvHandler(data []byte, resp RPCResponse) {
 	mvReq := &sliverpb.MvReq{}
 	err := proto.Unmarshal(data, mvReq)
@@ -316,6 +320,7 @@ func mvHandler(data []byte, resp RPCResponse) {
 	resp(data, err)
 }
 
+// 使用os.MkdirAll可以递归创建
 func mkdirHandler(data []byte, resp RPCResponse) {
 	mkdirReq := &sliverpb.MkdirReq{}
 	err := proto.Unmarshal(data, mkdirReq)
@@ -340,6 +345,7 @@ func mkdirHandler(data []byte, resp RPCResponse) {
 	resp(data, err)
 }
 
+// os.Chdir切目录，os.Getwd作为返回值返回
 func cdHandler(data []byte, resp RPCResponse) {
 	cdReq := &sliverpb.CdReq{}
 	err := proto.Unmarshal(data, cdReq)
@@ -367,6 +373,7 @@ func cdHandler(data []byte, resp RPCResponse) {
 	resp(data, err)
 }
 
+// 返回os.Getwd
 func pwdHandler(data []byte, resp RPCResponse) {
 	pwdReq := &sliverpb.PwdReq{}
 	err := proto.Unmarshal(data, pwdReq)
@@ -488,6 +495,9 @@ func downloadHandler(data []byte, resp RPCResponse) {
 	resp(data, err)
 }
 
+// 文件上传
+// 如果只写目标文件名，将会上传到当前工作目录
+// 可以选择gzip或者明文
 func uploadHandler(data []byte, resp RPCResponse) {
 	uploadReq := &sliverpb.UploadReq{}
 	err := proto.Unmarshal(data, uploadReq)
@@ -499,6 +509,7 @@ func uploadHandler(data []byte, resp RPCResponse) {
 		return
 	}
 
+	// 可以只写文件名，会上传到当前工作目录
 	uploadPath, err := filepath.Abs(uploadReq.Path)
 	if err != nil {
 		// {{if .Config.Debug}}
@@ -540,6 +551,8 @@ func uploadHandler(data []byte, resp RPCResponse) {
 	resp(data, err)
 }
 
+// exec.Command执行，根据是否要输出结果来走不同处理
+// 最后都会将PID返回回去
 func executeHandler(data []byte, resp RPCResponse) {
 	var (
 		err       error
@@ -626,6 +639,7 @@ func executeHandler(data []byte, resp RPCResponse) {
 		}
 		execResp.Stderr = stdErrBuff.Bytes()
 		execResp.Stdout = stdOutBuff.Bytes()
+		// 执行后会返回进程的PID
 		if cmd.Process != nil {
 			execResp.Pid = uint32(cmd.Process.Pid)
 		}
@@ -724,6 +738,8 @@ func unsetEnvHandler(data []byte, resp RPCResponse) {
 	resp(data, err)
 }
 
+// 设置ReconnectInterval、BeaconInterval、BeaconJitter
+// 都是直接写进全局变量中
 func reconfigureHandler(data []byte, resp RPCResponse) {
 	reconfigReq := &sliverpb.ReconfigureReq{}
 	err := proto.Unmarshal(data, reconfigReq)

@@ -310,6 +310,8 @@ func buildEntries(proto string, s []netstat.SockTabEntry) []*sliverpb.SockTabEnt
 
 }
 
+// 连接SSH，并执行一条命令
+// 没有提供代理的支持
 func runSSHCommandHandler(data []byte, resp RPCResponse) {
 	commandReq := &sliverpb.SSHCommandReq{}
 	err := proto.Unmarshal(data, commandReq)
