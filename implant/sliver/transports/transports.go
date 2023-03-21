@@ -35,7 +35,9 @@ const (
 	strategySequential   = "s"
 )
 
+// C2Generator - 根据连接策略创建一个C2网址流/
 // C2Generator - Creates a stream of C2 URLs based on a connection strategy
+// 这里的abort 参数也是用来控制这个函数里的子协程退出的。返回一个URL结构体，该结构体中包含一些上线的配置信息
 func C2Generator(abort <-chan struct{}) <-chan *url.URL {
 	// {{if .Config.Debug}}
 	log.Printf("Starting c2 url generator ({{.Config.ConnectionStrategy}}) ...")
@@ -54,6 +56,7 @@ func C2Generator(abort <-chan struct{}) <-chan *url.URL {
 	go func() {
 		defer close(generator)
 		c2Counter := uint(0)
+		// 这里是一个死循环，也就是说只要外层函数没有终止，那么他就会一直循环下去，读取到一个uri就尝试去写入到generator这个chan里
 		for {
 			var next string
 			// 选择上线规则

