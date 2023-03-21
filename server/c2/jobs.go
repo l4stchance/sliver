@@ -319,6 +319,8 @@ func StartHTTPStagerListenerJob(conf *HTTPServerConfig, data []byte) (*core.Job,
 }
 
 // StartPersistentJobs - Start persistent jobs
+// 起监听
+// persistent名字起的好，不明所以
 func StartPersistentJobs(cfg *configs.ServerConfig) error {
 	if cfg.Jobs == nil {
 		return nil

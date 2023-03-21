@@ -35,6 +35,7 @@ import (
 // -----------------------
 
 // SetupCAs - Creates directories for certs
+// 加载所需证书
 func SetupCAs() {
 	GenerateCertificateAuthority(MtlsImplantCA, "")
 	GenerateCertificateAuthority(MtlsServerCA, "")

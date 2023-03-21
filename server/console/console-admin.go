@@ -177,6 +177,8 @@ func kickOperatorCmd(ctx *grumble.Context) {
 	fmt.Printf(Info+"Operator %s has been kicked out.\n", operator)
 }
 
+// 为Client起监听，Multiplayer
+// 猜测是gRPC交互用的？？？？？
 func StartPersistentJobs(cfg *configs.ServerConfig) error {
 	if cfg.Jobs == nil {
 		return nil

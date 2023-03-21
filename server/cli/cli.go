@@ -56,6 +56,7 @@ const (
 )
 
 // Initialize logging
+// 日志记录在 /.sliver/logs/console.log
 func initConsoleLogging(appDir string) *os.File {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	logFile, err := os.OpenFile(filepath.Join(appDir, "logs", logFileName), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
@@ -113,6 +114,7 @@ var rootCmd = &cobra.Command{
 		logFile := initConsoleLogging(appDir)
 		defer logFile.Close()
 
+		// 异常的时候，打一下日志再退出
 		defer func() {
 			if r := recover(); r != nil {
 				log.Printf("panic:\n%s", debug.Stack())
@@ -122,6 +124,7 @@ var rootCmd = &cobra.Command{
 		}()
 
 		assets.Setup(false, true)
+		// 一堆证书的加载
 		certs.SetupCAs()
 		certs.SetupWGKeys()
 		cryptography.ECCServerKeyPair()
@@ -131,6 +134,7 @@ var rootCmd = &cobra.Command{
 		serverConfig := configs.GetServerConfig()
 		c2.StartPersistentJobs(serverConfig)
 		console.StartPersistentJobs(serverConfig)
+		// 守护进程
 		if serverConfig.DaemonMode {
 			daemon.Start(daemon.BlankHost, daemon.BlankPort)
 		} else {

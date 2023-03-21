@@ -237,7 +237,9 @@ func (c *ServerConfig) RemoveJob(jobID string) {
 // GetServerConfig - Get config value
 func GetServerConfig() *ServerConfig {
 	configPath := GetServerConfigPath()
+	// 默认配置
 	config := getDefaultServerConfig()
+	// 如果有自定义，覆盖掉默认的config变量
 	if _, err := os.Stat(configPath); !os.IsNotExist(err) {
 		data, err := os.ReadFile(configPath)
 		if err != nil {
@@ -253,6 +255,7 @@ func GetServerConfig() *ServerConfig {
 		serverConfigLog.Warnf("Config file does not exist, using defaults")
 	}
 
+	// 日志等级
 	if config.Logs.Level < 0 {
 		config.Logs.Level = 0
 	}
@@ -261,6 +264,7 @@ func GetServerConfig() *ServerConfig {
 	}
 	log.RootLogger.SetLevel(log.LevelFrom(config.Logs.Level))
 
+	// 更新配置文件
 	err := config.Save() // This updates the config with any missing fields
 	if err != nil {
 		serverConfigLog.Errorf("Failed to save default config %s", err)

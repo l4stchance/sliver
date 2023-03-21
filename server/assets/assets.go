@@ -56,6 +56,7 @@ var (
 )
 
 // GetRootAppDir - Get the Sliver app dir, default is: ~/.sliver/
+// 按照环境变量创建目录，如果要更改目录，自己设置环境变量
 func GetRootAppDir() string {
 
 	value := os.Getenv(envVarName)
@@ -95,9 +96,12 @@ func saveAssetVersion(appDir string) {
 }
 
 // Setup - Extract or create local assets
+// 初始化各种文件，包括go、src等
 func Setup(force bool, echo bool) {
+	// 校验版本
 	appDir := GetRootAppDir()
 	localVer := assetVersion()
+	// GitCommit编译时指定的
 	if force || localVer == "" || localVer != ver.GitCommit {
 		setupLog.Infof("Version mismatch %v != %v", localVer, ver.GitCommit)
 		if echo {
@@ -108,8 +112,11 @@ This is free software, and you are welcome to redistribute it
 under certain conditions; type 'licenses' for details.`)
 			fmt.Printf("\n\nUnpacking assets ...\n")
 		}
+		// 解压出go、src、garble、sgn
 		setupGo(appDir)
+		// 读取两个txt文件，里面全是名字
 		setupCodenames(appDir)
+		// 保存当前版本
 		saveAssetVersion(appDir)
 	}
 }
@@ -155,7 +162,7 @@ func GetGPGPublicKey() (*packet.PublicKey, error) {
 
 // SetupGo - Unzip Go compiler assets
 func setupGo(appDir string) error {
-
+	// 判断/.sliver/go/目录是否存在，存在就删除
 	setupLog.Infof("Unpacking to '%s'", appDir)
 	goRootPath := filepath.Join(appDir, GoDirName)
 	setupLog.Infof("GOPATH = %s", goRootPath)
@@ -174,6 +181,7 @@ func setupGo(appDir string) error {
 	os.MkdirAll(goRootPath, 0700)
 
 	// Go compiler and stdlib
+	// 从内嵌文件go.zip中解压出Go到/go/目录下
 	goZipFSPath := filepath.Join("fs", runtime.GOOS, runtime.GOARCH, "go.zip")
 	goZip, err := assetsFs.ReadFile(goZipFSPath)
 	if err != nil {
@@ -190,6 +198,7 @@ func setupGo(appDir string) error {
 		return err
 	}
 
+	// 同上
 	goSrcZip, err := assetsFs.ReadFile("fs/src.zip")
 	if err != nil {
 		setupLog.Info("static asset not found: src.zip")
@@ -204,6 +213,7 @@ func setupGo(appDir string) error {
 		return err
 	}
 
+	// 解压出garble
 	garbleFileName := "garble"
 	if runtime.GOOS == "windows" {
 		garbleFileName = "garble.exe"
@@ -224,6 +234,7 @@ func setupGo(appDir string) error {
 	return setupSGN(appDir)
 }
 
+// 解压出sgn
 func setupSGN(appDir string) error {
 	goBinPath := filepath.Join(appDir, "go", "bin")
 	sgnZipFSPath := filepath.Join("fs", runtime.GOOS, runtime.GOARCH, "sgn.zip")
