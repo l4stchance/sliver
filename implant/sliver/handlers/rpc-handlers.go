@@ -98,7 +98,7 @@ func dumpHandler(data []byte, resp RPCResponse) {
 	resp(data, err)
 }
 
-// 任务执行，本地CreateThread、远程CreateRemoteThread(复制了句柄)
+// Windows：任务执行，本地CreateThread、远程CreateRemoteThread(复制了句柄)
 func taskHandler(data []byte, resp RPCResponse) {
 	var err error
 	task := &sliverpb.TaskReq{}
