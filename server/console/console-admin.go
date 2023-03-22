@@ -119,6 +119,8 @@ func newOperatorCmd(ctx *grumble.Context) {
 }
 
 // NewOperatorConfig - Generate a new player/client/operator configuration
+// https://github.com/BishopFox/sliver/wiki/Multiplayer-Mode
+// 猜测，连接TS是需要提前注册的
 func NewOperatorConfig(operatorName string, lhost string, lport uint16) ([]byte, error) {
 	if !namePattern.MatchString(operatorName) {
 		return nil, errors.New("Invalid operator name (alphanumerics only)")

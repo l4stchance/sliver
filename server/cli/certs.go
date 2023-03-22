@@ -52,6 +52,7 @@ func validCATypes() []string {
 	return types
 }
 
+// 将CA从文件导入
 var cmdImportCA = &cobra.Command{
 	Use:   "import-ca",
 	Short: "Import certificate authority",
@@ -98,6 +99,7 @@ var cmdImportCA = &cobra.Command{
 	},
 }
 
+// CA证书写入文件
 var cmdExportCA = &cobra.Command{
 	Use:   "export-ca",
 	Short: "Export certificate authority",

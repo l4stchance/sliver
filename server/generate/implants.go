@@ -70,6 +70,8 @@ func ImplantConfigSave(config *models.ImplantConfig) error {
 }
 
 // ImplantBuildSave - Saves a binary file into the database
+// 保存文件
+// 有储存MD5等值，定时在VT进行查询
 func ImplantBuildSave(name string, config *models.ImplantConfig, fPath string) error {
 	rootAppDir, _ := filepath.Abs(assets.GetRootAppDir())
 	fPath, _ = filepath.Abs(fPath)

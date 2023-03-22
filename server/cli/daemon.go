@@ -15,6 +15,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// 启用守护进程，流程与rootCmd中的处理一致
 var daemonCmd = &cobra.Command{
 	Use:   "daemon",
 	Short: "Force start server in daemon mode",

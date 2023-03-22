@@ -60,6 +60,10 @@ func Start(host string, port uint16) {
 		os.Exit(1)
 	}
 
+	// 阻止进程退出，并在退出时打印
+	// syscall.SIGTERM 结束程序(可以被捕获、阻塞或忽略)
+	// signal.Notify会在结束的时候向signals发送通知，signals将停止阻塞，向下执行，打印、关闭，并向done写入
+	// 外部的done收到消息，停止阻塞，Start函数执行结束
 	done := make(chan bool)
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGTERM)

@@ -28,6 +28,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// 将操作配置写入文件
 var operatorCmd = &cobra.Command{
 	Use:   "operator",
 	Short: "Generate operator configuration files",

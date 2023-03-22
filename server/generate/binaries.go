@@ -402,6 +402,8 @@ func SliverSharedLibrary(name string, otpSecret string, config *models.ImplantCo
 }
 
 // SliverExecutable - Generates a sliver executable binary
+// 实时编译
+// 就这？？？直接调用CMD进行编译
 func SliverExecutable(name string, otpSecret string, config *models.ImplantConfig, save bool) (string, error) {
 	// Compile go code
 	appDir := assets.GetRootAppDir()
@@ -465,7 +467,9 @@ func SliverExecutable(name string, otpSecret string, config *models.ImplantConfi
 }
 
 // This function is a little too long, we should probably refactor it as some point
+// 进行模板替换 准备工作
 func renderSliverGoCode(name string, otpSecret string, config *models.ImplantConfig, goConfig *gogo.GoConfig) (string, error) {
+	// 校验GOOS、GOARCH是否支持
 	target := fmt.Sprintf("%s/%s", config.GOOS, config.GOARCH)
 	if _, ok := gogo.ValidCompilerTargets(*goConfig)[target]; !ok {
 		return "", fmt.Errorf("invalid compiler target: %s", target)
@@ -476,6 +480,7 @@ func renderSliverGoCode(name string, otpSecret string, config *models.ImplantCon
 
 	buildLog.Debugf("Generating new sliver binary '%s'", name)
 
+	// 构造项目路径
 	sliversDir := GetSliversDir() // ~/.sliver/slivers
 	projectGoPathDir := filepath.Join(sliversDir, config.GOOS, config.GOARCH, filepath.Base(name))
 	if _, err := os.Stat(projectGoPathDir); os.IsNotExist(err) {
@@ -546,6 +551,7 @@ func renderSliverGoCode(name string, otpSecret string, config *models.ImplantCon
 		// --------------
 		// Render Code
 		// --------------
+		// text/template ：https://www.cnblogs.com/wanghui-garcia/p/10385062.html
 		sliverCodeTmpl := template.New("sliver")
 		sliverCodeTmpl, err = sliverCodeTmpl.Funcs(template.FuncMap{
 			"GenerateUserAgent": func() string {

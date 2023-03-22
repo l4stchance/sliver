@@ -25,6 +25,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// 解压assets文件
 var unpackCmd = &cobra.Command{
 	Use:   "unpack",
 	Short: "Unpack assets and exit",
